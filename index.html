@@ -235,12 +235,28 @@ function busy(on) { pending += on ? 1 : -1; $('#loading').classList.toggle('hidd
 const READS = ['today', 'myAttendance', 'myRequests', 'myPayslips', 'dashboard', 'listEmployees', 'listAttendance', 'listRequests',
   'getAdjustments', 'getPayroll', 'getSettings', 'listBranches', 'listHolidays', 'listSchedules'];
 let CACHE = {};
+// Lưu bộ nhớ đệm vào máy để lần mở app sau hiện dữ liệu ngay, rồi cập nhật ngầm
+const cacheKeyLS = () => 'cc_cache_' + (ME ? ME.MaNV : '');
+function loadCache() { try { CACHE = JSON.parse(localStorage.getItem(cacheKeyLS()) || '{}'); } catch (e) { CACHE = {}; } }
+let saveTimer = null;
+function saveCache() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    try {
+      const keep = {};
+      Object.keys(CACHE).sort((a, b) => CACHE[b].t - CACHE[a].t).slice(0, 30).forEach(k => keep[k] = CACHE[k]);
+      let j = JSON.stringify(keep);
+      if (j.length > 1500000) j = '{}';
+      localStorage.setItem(cacheKeyLS(), j);
+    } catch (e) {}
+  }, 300);
+}
 let REFRESH = null; // hàm vẽ lại trang hiện tại
 let refreshTimer = null;
 
 function call(action, payload) {
   if (READS.indexOf(action) < 0) {
-    if (['info', 'me', 'login', 'getPhoto'].indexOf(action) < 0) CACHE = {}; // có thay đổi dữ liệu → xóa đệm
+    if (['info', 'me', 'login', 'getPhoto', 'logout'].indexOf(action) < 0) { CACHE = {}; saveCache(); } // có thay đổi dữ liệu → xóa đệm
     return rawCall(action, payload);
   }
   const key = action + '|' + JSON.stringify(payload || {});
@@ -248,6 +264,7 @@ function call(action, payload) {
   const fresh = rawCall(action, payload, true).then(d => {
     const changed = !hit || JSON.stringify(hit.d) !== JSON.stringify(d);
     CACHE[key] = { d: d, t: Date.now() };
+    saveCache();
     if (hit && changed) scheduleRefresh();
     return d;
   });
@@ -364,9 +381,24 @@ const IC = {
 /* ===================== KHỞI ĐỘNG ===================== */
 async function boot() {
   if (TOKEN) {
+    // Mở ngay bằng thông tin đã lưu, kiểm tra lại với máy chủ ở phía sau
+    let saved = null;
+    try { saved = JSON.parse(store.get('cc_me') || 'null'); } catch (e) {}
+    if (saved && saved.user && saved.user.MaNV) {
+      ME = saved.user; INFO = saved.info || {};
+      startApp();
+      call('me').then(r => {
+        const changed = JSON.stringify(r) !== JSON.stringify(saved);
+        store.set('cc_me', JSON.stringify(r));
+        ME = r.user; INFO = r.info;
+        if (changed) startApp();
+      }).catch(() => {});
+      return;
+    }
     try {
       const r = await call('me');
       ME = r.user; INFO = r.info;
+      store.set('cc_me', JSON.stringify(r));
       return startApp();
     } catch (e) { logoutLocal(); }
   }
@@ -389,13 +421,17 @@ $('#loginForm').addEventListener('submit', async e => {
     TOKEN = r.token; ME = r.user;
     store.set('cc_token', TOKEN); store.set('cc_last', ME.MaNV);
     $('#lgPw').value = '';
-    const me = await call('me'); INFO = me.info;
+    if (r.info) INFO = r.info; else INFO = (await call('me')).info;
+    store.set('cc_me', JSON.stringify({ user: ME, info: INFO }));
     startApp();
   } catch (err) { fail(err); }
   btn.disabled = false;
 });
 
-function logoutLocal() { TOKEN = null; ME = null; CACHE = {}; store.del('cc_token'); }
+function logoutLocal() {
+  try { if (ME) localStorage.removeItem('cc_cache_' + ME.MaNV); } catch (e) {}
+  TOKEN = null; ME = null; CACHE = {}; store.del('cc_token'); store.del('cc_me');
+}
 function stillHere(sel) { return !!document.querySelector(sel); }
 $('#btnLogout').onclick = async () => {
   if (!(await confirmBox('Đăng xuất khỏi tài khoản này?', 'Đăng xuất'))) return;
@@ -406,6 +442,7 @@ $('#btnLogout').onclick = async () => {
 const isAdmin = () => ME && ME.VaiTro === 'ADMIN';
 
 function startApp() {
+  loadCache();
   $('#loginView').classList.add('hidden');
   $('#appView').classList.remove('hidden');
   $('#hdCo').textContent = INFO.TenCongTy || '';
@@ -865,7 +902,11 @@ function bindPw(root, after) {
   $('[data-pw]', root).onclick = async () => {
     const f = formData(root);
     if (f.MatKhauMoi !== f.NhapLai) return toast('Mật khẩu nhập lại không khớp', 'err');
-    try { await call('changePassword', f); toast('Đã đổi mật khẩu', 'ok'); ME.PhaiDoiMK = false; after && after(); } catch (e) { fail(e); }
+    try {
+      await call('changePassword', f); toast('Đã đổi mật khẩu', 'ok'); ME.PhaiDoiMK = false;
+      store.set('cc_me', JSON.stringify({ user: ME, info: INFO }));
+      after && after();
+    } catch (e) { fail(e); }
   };
 }
 function vAccount() {
