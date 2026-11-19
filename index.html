@@ -134,17 +134,19 @@ table.t input.i{min-height:34px;padding:6px 8px;font-size:13px;min-width:110px}
 .logo{width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,#ffb020,#ff7a00);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;box-shadow:0 6px 16px rgba(255,122,0,.35)}
 .logo svg{width:32px;height:32px;color:#fff}
 
-/* Camera quét mặt */
-.cam{position:fixed;inset:0;background:#0b1220;z-index:70;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;padding:16px}
-.cam h3{font-size:17px;margin-bottom:12px;text-align:center}
-.cam-box{position:relative;width:min(88vw,400px);aspect-ratio:3/4;border-radius:22px;overflow:hidden;background:#000}
-.cam video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1);display:block}
-.cam .oval{position:absolute;left:50%;top:46%;width:64%;height:70%;transform:translate(-50%,-50%);border:4px solid rgba(255,255,255,.75);border-radius:50%;box-shadow:0 0 0 999px rgba(11,18,32,.5);transition:border-color .2s}
-.cam .oval.ok{border-color:#3cc489} .cam .oval.bad{border-color:#ff8a65}
-.cam .msg{margin-top:16px;font-size:18px;font-weight:600;text-align:center;min-height:50px;max-width:400px}
-.cam .sub{font-size:13px;opacity:.75;text-align:center;max-width:400px}
-.cam .steps{display:flex;gap:8px;margin-top:10px} .cam .steps span{width:40px;height:6px;border-radius:3px;background:rgba(255,255,255,.25)} .cam .steps span.on{background:#3cc489}
-.cam .btn{margin-top:18px;background:rgba(255,255,255,.14)}
+/* Camera quét mặt: toàn màn hình */
+.cam{position:fixed;inset:0;background:#000;z-index:70;color:#fff;overflow:hidden}
+.cam video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
+.cam .oval{position:absolute;left:50%;top:52%;width:min(76vw,360px);height:min(100vw,470px);transform:translate(-50%,-50%);border:5px solid rgba(255,255,255,.9);border-radius:50%;box-shadow:0 0 0 3000px rgba(0,0,0,.28);transition:border-color .2s}
+.cam .oval.ok{border-color:#3cc489} .cam .oval.bad{border-color:#ffb020}
+.cam .ctop{position:absolute;top:calc(env(safe-area-inset-top) + 18px);left:0;right:0;text-align:center;padding:0 16px;text-shadow:0 1px 3px rgba(0,0,0,.5)}
+.cam .ctop h3{font-size:17px;margin:0 0 4px}
+.cam .stepTxt{font-size:13px;font-weight:700;letter-spacing:1px;opacity:.9;margin:6px 0}
+.cam .msg{display:inline-block;background:#1f47d6;padding:10px 20px;border-radius:16px;font-size:20px;font-weight:700;max-width:92vw;text-shadow:none}
+.cam .msg.ok{background:#14915a} .cam .msg.bad{background:#c77700}
+.cam .sub{font-size:13px;opacity:.85;margin-top:8px}
+.cam .bottom{position:absolute;left:20px;right:20px;bottom:calc(env(safe-area-inset-bottom) + 24px)}
+.cam .bottom .btn{width:100%;background:rgba(0,0,0,.35);border:2px solid rgba(255,255,255,.85);border-radius:16px;min-height:52px;font-size:17px}
 .faces{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px}
 .faces .card{margin:0;padding:12px}
 .ph{width:100%;aspect-ratio:3/4;background:#e9edf3;border-radius:10px;object-fit:cover;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px;overflow:hidden}
@@ -470,7 +472,7 @@ async function detectFace(video) {
   return {
     desc: Array.from(r.descriptor),
     yaw: (nose.x - eyeL.x) / ((eyeR.x - eyeL.x) || 1), // 0,5 = nhìn thẳng
-    size: r.detection.box.width / (video.videoWidth || 640)
+    size: r.detection.box.width / (Math.min(video.videoWidth, video.videoHeight) || 480)
   };
 }
 
@@ -486,14 +488,16 @@ function faceScan(opts) {
   return new Promise((resolve, reject) => {
     const el = document.createElement('div');
     el.className = 'cam';
-    el.innerHTML = '<h3>' + esc(opts.title || 'Quét khuôn mặt') + '</h3><div class="cam-box"><video playsinline muted autoplay></video><div class="oval"></div></div>' +
-      '<div class="steps"><span></span><span></span><span></span></div><div class="msg">Đang mở camera…</div>' +
-      '<div class="sub">Đứng nơi đủ sáng · bỏ nón, khẩu trang, kính râm</div><button class="btn">Hủy</button>';
+    el.innerHTML = '<video playsinline muted autoplay></video><div class="oval"></div>' +
+      '<div class="ctop"><h3>' + esc(opts.title || 'Quét khuôn mặt') + '</h3><div class="stepTxt">BƯỚC 1/3</div>' +
+      '<div class="msg">Đang mở camera…</div><div class="sub">Giữ điện thoại ngang tầm mắt · đủ sáng · bỏ nón, khẩu trang</div></div>' +
+      '<div class="bottom"><button class="btn">Hủy</button></div>';
     document.body.appendChild(el);
     $('#toast').classList.add('hidden');
-    const video = $('video', el), oval = $('.oval', el), msg = $('.msg', el), steps = $$('.steps span', el);
+    const video = $('video', el), oval = $('.oval', el), msg = $('.msg', el), stepTxt = $('.stepTxt', el);
+    const setStep = n => { stepTxt.textContent = 'BƯỚC ' + n + '/3'; };
     let stream = null, done = false;
-    const say = (t, cls) => { msg.textContent = t; oval.className = 'oval ' + (cls || ''); };
+    const say = (t, cls) => { msg.textContent = t; msg.className = 'msg ' + (cls || ''); oval.className = 'oval ' + (cls || ''); };
     const finish = (err, val) => {
       if (done) return; done = true;
       if (stream) stream.getTracks().forEach(t => t.stop());
@@ -508,7 +512,7 @@ function faceScan(opts) {
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error('Trình duyệt này không mở được camera. Hãy dùng Chrome (Android) hoặc Safari (iPhone).');
         const modelP = loadFaceApi();
         try {
-          stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }, audio: false });
+          stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 720 }, height: { ideal: 960 } }, audio: false });
         } catch (e) {
           throw new Error(e && e.name === 'NotAllowedError' ? 'Bạn chưa cho phép dùng camera. Vào cài đặt trình duyệt, cho phép Camera cho trang này rồi thử lại.' : 'Không mở được camera trước. Thử đóng các app đang dùng camera rồi thử lại.');
         }
@@ -520,55 +524,61 @@ function faceScan(opts) {
         if (done) return;
         const t0 = Date.now();
         const timeout = () => { if (Date.now() - t0 > 45000) throw new Error('Hết thời gian quét. Hãy thử lại ở nơi đủ sáng.'); };
-        const frontal = f => f && f.size >= 0.2 && Math.abs(f.yaw - 0.5) < 0.09;
-        const hint = f => !f ? 'Đưa khuôn mặt vào khung' : f.size < 0.2 ? 'Đưa điện thoại lại gần hơn' : 'Nhìn thẳng vào camera';
+        const MIN_SIZE = 0.16;
+        const hint = f => !f ? 'Đưa khuôn mặt vào khung' : f.size < MIN_SIZE ? 'Đưa điện thoại lại gần hơn' : 'Nhìn thẳng vào camera';
 
-        // Bước 1: nhìn thẳng
-        let d1 = null, ok = 0;
+        // Bước 1: nhìn thẳng (nới dần điều kiện nếu quá 4 giây để không ai bị kẹt)
+        setStep(1);
+        let d1 = null, base = 0.5, ok = 0;
+        const s1 = Date.now();
         while (!done && !d1) {
           timeout();
           const f = await detectFace(video);
-          if (frontal(f)) { ok++; say('Giữ yên…', 'ok'); if (ok >= 2) d1 = f.desc; }
-          else { ok = 0; say(hint(f), f ? 'bad' : ''); }
+          const tol = Date.now() - s1 > 4000 ? 0.22 : 0.14;
+          if (f && f.size >= MIN_SIZE && Math.abs(f.yaw - 0.5) < tol) {
+            ok++; say('Giữ yên…', 'ok');
+            if (ok >= 2) { d1 = f.desc; base = f.yaw; }
+          } else { ok = 0; say(hint(f), f ? 'bad' : ''); }
           await sleep(60);
         }
         if (done) return;
-        steps[0].classList.add('on');
 
-        // Bước 2: quay đầu sang một bên
+        // Bước 2: quay đầu sang một bên (so với tư thế nhìn thẳng của chính người đó)
+        setStep(2);
         const t1 = Date.now();
         let turned = false;
+        say('Từ từ quay đầu sang trái hoặc phải');
         while (!done && !turned) {
           timeout();
-          if (Date.now() - t1 > 12000) throw new Error('Không thấy bạn quay đầu. Hãy thử lại và quay đầu rõ hơn.');
-          say('Từ từ quay đầu sang trái hoặc phải');
+          if (Date.now() - t1 > 15000) throw new Error('Không thấy bạn quay đầu. Hãy thử lại và quay đầu rõ hơn.');
           const f = await detectFace(video);
-          if (f && Math.abs(f.yaw - 0.5) > 0.17) turned = true;
+          if (f && Math.abs(f.yaw - base) > 0.15) turned = true;
           await sleep(40);
         }
         if (done) return;
-        steps[1].classList.add('on');
 
         // Bước 3: nhìn thẳng lại
+        setStep(3);
         const descs = [d1];
         let photo = '';
         ok = 0;
+        const s3 = Date.now();
         while (!done && descs.length < (opts.register ? 3 : 2)) {
           timeout();
           const f = await detectFace(video);
-          if (frontal(f)) {
-            ok++; say('Nhìn thẳng lại… giữ yên', 'ok');
+          const tol = Date.now() - s3 > 4000 ? 0.12 : 0.07;
+          if (f && f.size >= MIN_SIZE && Math.abs(f.yaw - base) < tol) {
+            ok++; say('Nhìn thẳng… giữ yên', 'ok');
             if (ok >= 2) {
               if (faceDist(f.desc, d1) > 0.55) throw new Error('Khuôn mặt thay đổi trong lúc quét. Chỉ một người đứng trước camera rồi thử lại.');
               descs.push(f.desc); ok = 0;
               if (!photo) photo = snap(video);
-              if (descs.length < (opts.register ? 3 : 2)) await sleep(500);
+              if (descs.length < (opts.register ? 3 : 2)) await sleep(400);
             }
-          } else { ok = 0; say(f ? 'Nhìn thẳng lại vào camera' : 'Đưa khuôn mặt vào khung', f ? 'bad' : ''); }
+          } else { ok = 0; say(f ? 'Quay mặt nhìn thẳng lại' : 'Đưa khuôn mặt vào khung', f ? 'bad' : ''); }
           await sleep(60);
         }
         if (done) return;
-        steps[2].classList.add('on');
         say('Xong!', 'ok');
         const avg = descs[0].map((_, i) => descs.reduce((t, d) => t + d[i], 0) / descs.length);
         await sleep(250);
