@@ -136,8 +136,8 @@ table.t input.i{min-height:34px;padding:6px 8px;font-size:13px;min-width:110px}
 
 /* Camera quét mặt: toàn màn hình */
 .cam{position:fixed;inset:0;background:#000;z-index:70;color:#fff;overflow:hidden}
-.cam video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
-.cam .oval{position:absolute;left:50%;top:52%;width:min(76vw,360px);height:min(100vw,470px);transform:translate(-50%,-50%);border:5px solid rgba(255,255,255,.9);border-radius:50%;box-shadow:0 0 0 3000px rgba(0,0,0,.28);transition:border-color .2s}
+.cam video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;transform:scaleX(-1);background:#000}
+.cam .oval{position:absolute;left:50%;top:50%;width:min(58vw,260px);height:min(78vw,350px);transform:translate(-50%,-50%);border:5px solid rgba(255,255,255,.9);border-radius:50%;transition:border-color .2s;pointer-events:none}
 .cam .oval.ok{border-color:#3cc489} .cam .oval.bad{border-color:#ffb020}
 .cam .ctop{position:absolute;top:calc(env(safe-area-inset-top) + 18px);left:0;right:0;text-align:center;padding:0 16px;text-shadow:0 1px 3px rgba(0,0,0,.5)}
 .cam .ctop h3{font-size:17px;margin:0 0 4px}
@@ -549,7 +549,7 @@ function faceScan(opts) {
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error('Trình duyệt này không mở được camera. Hãy dùng Chrome (Android) hoặc Safari (iPhone).');
         const modelP = loadFaceApi();
         try {
-          stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 720 }, height: { ideal: 960 } }, audio: false });
+          stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 480 }, height: { ideal: 640 } }, audio: false });
         } catch (e) {
           throw new Error(e && e.name === 'NotAllowedError' ? 'Bạn chưa cho phép dùng camera. Vào cài đặt trình duyệt, cho phép Camera cho trang này rồi thử lại.' : 'Không mở được camera trước. Thử đóng các app đang dùng camera rồi thử lại.');
         }
@@ -561,7 +561,7 @@ function faceScan(opts) {
         if (done) return;
         const t0 = Date.now();
         const timeout = () => { if (Date.now() - t0 > 45000) throw new Error('Hết thời gian quét. Hãy thử lại ở nơi đủ sáng.'); };
-        const MIN_SIZE = 0.16;
+        const MIN_SIZE = 0.12;
         const hint = f => !f ? 'Đưa khuôn mặt vào khung' : f.size < MIN_SIZE ? 'Đưa điện thoại lại gần hơn' : 'Nhìn thẳng vào camera';
 
         // Bước 1: nhìn thẳng (nới dần điều kiện nếu quá 4 giây để không ai bị kẹt)
@@ -856,11 +856,10 @@ function slipHtml(r, co) {
     (ot ? ln('Giờ tăng ca', fmtNum(ot) + ' giờ') : '') +
     '<div class="sec">Thu nhập</div>' +
     ln('Lương theo công', money(r.LuongCong)) +
-    (n(r.TienOT) ? ln('Tiền tăng ca', money(r.TienOT)) : '') +
-    (n(r.GioOT150) ? ln('OT ngày thường', fmtNum(r.GioOT150) + 'h', 'sub') : '') +
-    (n(r.GioOT200) ? ln('OT ngày nghỉ tuần', fmtNum(r.GioOT200) + 'h', 'sub') : '') +
-    (n(r.GioOT300) ? ln('OT ngày lễ', fmtNum(r.GioOT300) + 'h', 'sub') : '') +
-    (n(r.PhuCapChiuThue) ? ln('Phụ cấp', money(r.PhuCapChiuThue)) : '') +
+    (n(r.PhuCapChiuThue) ? ln('Phụ cấp (dự án, chức vụ)', money(r.PhuCapChiuThue)) : '') +
+    (n(r.GioOT200) ? ln('Tăng ca chịu thuế (gộp phụ cấp)', fmtNum(r.GioOT200) + 'h', 'sub') : '') +
+    (n(r.TienOT) ? ln('Tăng ca (miễn thuế)', money(r.TienOT)) : '') +
+    (n(r.GioOT150) ? ln(fmtNum(r.GioOT150) + ' giờ đầu, miễn thuế', '', 'sub') : '') +
     (n(r.PhuCapKhongChiuThue) ? ln('Phụ cấp không chịu thuế', money(r.PhuCapKhongChiuThue)) : '') +
     (n(r.Thuong) ? ln('Thưởng', money(r.Thuong)) : '') +
     ln('<b>Tổng thu nhập</b>', '<b>' + money(r.TongThuNhap) + '</b>') +
@@ -869,10 +868,13 @@ function slipHtml(r, co) {
     (n(r.TienBH) ? ln('Lương đóng BH: ' + money(r.LuongDongBH), '', 'sub') : '') +
     ln('Thuế TNCN', money(r.ThueTNCN)) +
     (n(r.ThueTNCN) ? ln('Thu nhập tính thuế: ' + money(r.ThuNhapTinhThue) + ' (giảm trừ ' + money(r.GiamTruGiaCanh) + ')', '', 'sub') : '') +
-    (n(r.PhatMuon) ? ln('Phạt đi muộn (' + r.SoLanMuon + ' lần)', money(r.PhatMuon)) : '') +
-    (n(r.TamUng) ? ln('Tạm ứng', money(r.TamUng)) : '') +
-    (n(r.KhauTruKhac) ? ln('Khấu trừ khác', money(r.KhauTruKhac)) : '') +
-    '<div class="net"><span>THỰC LĨNH</span><b class="num">' + money(r.ThucLinh) + ' đ</b></div>' +
+    '<div class="net"><span>THỰC NHẬN</span><b class="num">' + money(r.ThucNhanTruocUng != null ? r.ThucNhanTruocUng : r.ThucLinh) + ' đ</b></div>' +
+    ((n(r.PhatMuon) || n(r.TamUng) || n(r.KhauTruKhac)) ?
+      '<div class="sec">Đã ứng / khấu trừ</div>' +
+      (n(r.PhatMuon) ? ln('Phạt đi muộn (' + r.SoLanMuon + ' lần)', money(r.PhatMuon)) : '') +
+      (n(r.TamUng) ? ln('Tạm ứng', money(r.TamUng)) : '') +
+      (n(r.KhauTruKhac) ? ln('Khấu trừ khác', money(r.KhauTruKhac)) : '') +
+      '<div class="net" style="background:var(--ok-soft)"><span>CÒN PHẢI TRẢ</span><b class="num" style="color:var(--ok)">' + money(r.ThucLinh) + ' đ</b></div>' : '') +
     (r.GhiChu ? '<div class="small muted mt">Ghi chú: ' + esc(r.GhiChu) + '</div>' : '') + '</div>';
 }
 
@@ -934,6 +936,7 @@ function forceChangePassword() {
 const ADMIN_TABS = [['dash', 'Tổng quan'], ['emp', 'Nhân viên'], ['face', 'Khuôn mặt'], ['att', 'Bảng công'], ['req', 'Duyệt đơn'], ['pay', 'Tính lương'], ['set', 'Cài đặt']];
 let ADMIN_SUB = 'dash';
 let EMP_CACHE = null;
+let PAYMODE = 'DAIVIET';
 
 function vAdmin(sub) {
   ADMIN_SUB = sub || ADMIN_SUB; NAV++;
@@ -984,8 +987,9 @@ async function aDash() {
 /* ---- Nhân viên ---- */
 async function aEmp() {
   try {
-    const [list, branches, scheds] = await Promise.all([employees(true), call('listBranches'), call('listSchedules')]);
+    const [list, branches, scheds, st] = await Promise.all([employees(true), call('listBranches'), call('listSchedules'), call('getSettings')]);
     branches.scheds = scheds;
+    PAYMODE = (st.Values && st.Values.CheDoLuong) || 'DAIVIET';
     let showQuit = false;
     const render = () => {
       const q = ($('#eSearch').value || '').toLowerCase();
@@ -1021,16 +1025,19 @@ function empForm(e, branches) {
     inp('NgayVaoLam', 'Ngày vào làm', 'date') + '<div><label class="f">Quyền</label>' + sel('VaiTro', [['NV', 'Nhân viên'], ['ADMIN', 'Quản lý (xem được lương mọi người)']], e.VaiTro) + '</div></div>' +
     '<h3 class="mt2">Lịch làm & lương</h3><div class="grid2">' +
     '<div><label class="f">Lịch làm việc</label>' + sel('LichLamViec', scheds.map(x => [x.ID, x.TenLich]), e.LichLamViec) + '</div>' +
-    inp('DonGiaOT', 'Giá 1 giờ tăng ca ngày thường (đ, trống = tự tính theo hệ số)', 'text', 'inputmode="numeric" data-money') +
     '<div><label class="f">Loại lương</label>' + sel('LoaiLuong', [['THANG', 'Lương tháng (theo ngày công)'], ['NGAY', 'Lương ngày'], ['GIO', 'Lương giờ']], e.LoaiLuong) + '</div>' +
-    inp('MucLuong', '<span id="mlLabel">Mức lương</span> (đ)', 'text', 'inputmode="numeric" data-money') +
-    inp('LuongDongBH', 'Lương đóng bảo hiểm (đ, 0 = không đóng)', 'text', 'inputmode="numeric" data-money') + inp('NguoiPhuThuoc', 'Số người phụ thuộc', 'number', 'min="0"') +
-    inp('PhuCapChiuThue', 'Phụ cấp chịu thuế / tháng (đ)', 'text', 'inputmode="numeric" data-money') + inp('PhuCapKhongChiuThue', 'Phụ cấp không chịu thuế / tháng (đ)', 'text', 'inputmode="numeric" data-money') +
+    inp('MucLuong', '<span id="mlLabel">Lương cơ bản / tháng</span> (đ)', 'text', 'inputmode="numeric" data-money') +
+    inp('PhuCapChiuThue', 'Phụ cấp dự án + chức vụ (đ, chia theo công)', 'text', 'inputmode="numeric" data-money') +
+    inp('LuongDongBH', 'Lương đóng bảo hiểm (đ, 0 = không đóng)', 'text', 'inputmode="numeric" data-money') +
+    inp('NguoiPhuThuoc', 'Số người phụ thuộc (giảm trừ thuế)', 'number', 'min="0"') +
+    inp('DonGiaOT', 'Giá 1 giờ tăng ca riêng (đ, trống = app tự tính)', 'text', 'inputmode="numeric" data-money') +
+    (PAYMODE === 'CHUAN' ? inp('PhuCapKhongChiuThue', 'Phụ cấp không chịu thuế (đ)', 'text', 'inputmode="numeric" data-money') : '') +
     inp('NgayPhepNam', 'Số ngày phép năm', 'number', 'min="0"') + '<div><label class="f">Trạng thái</label>' + sel('TrangThai', [['DANGLAM', 'Đang làm'], ['NGHIVIEC', 'Nghỉ việc (khóa đăng nhập)']], e.TrangThai) + '</div></div>' +
+    (PAYMODE === 'DAIVIET' ? '<div class="small muted mt">Tăng ca: để trống ô "Giá 1 giờ tăng ca riêng" thì app tự tính = lương cơ bản ÷ công chuẩn ÷ 8 × 1.5. Chỉ điền khi người này có giá OT cố định khác.</div>' : '') +
     '<div class="row wrap mt2">' + (isNew ? '' : '<button class="btn light" id="eReset">Đặt lại mật khẩu</button>') + '<span class="grow"></span><button class="btn" id="eSave">Lưu</button></div>', { wide: true });
   const fmtMoneyInput = el => { const v = String(el.value).replace(/\D/g, ''); el.value = v ? Number(v).toLocaleString('vi-VN') : ''; };
   $$('[data-money]', m).forEach(el => { fmtMoneyInput(el); el.oninput = () => fmtMoneyInput(el); });
-  const lab = () => { $('#mlLabel', m).textContent = { THANG: 'Lương tháng', NGAY: 'Đơn giá 1 ngày', GIO: 'Đơn giá 1 giờ' }[$('[name=LoaiLuong]', m).value]; };
+  const lab = () => { $('#mlLabel', m).textContent = { THANG: 'Lương cơ bản / tháng', NGAY: 'Đơn giá 1 ngày', GIO: 'Đơn giá 1 giờ' }[$('[name=LoaiLuong]', m).value]; };
   $('[name=LoaiLuong]', m).onchange = lab; lab();
   $('#eSave', m).onclick = async () => {
     const f = formData(m);
@@ -1262,8 +1269,12 @@ async function sGen() {
         '<div class="grid3">' + inp('PhutChoPhep', 'Số phút được phép trễ', 'number') + inp('TienPhatMoiLan', 'Tiền phạt mỗi lần (đ)', 'number') + inp('TienPhatMoiPhut', 'Tiền phạt mỗi phút (đ)', 'number') + '</div></div>' +
       '<div class="card"><h3>Bảo hiểm</h3>' + radio('CheDoDongBH', [['RIENG', 'Theo mức lương đóng BH riêng từng người'], ['MUCLUONG', 'Theo lương cơ bản (lương tháng)'], ['KHONG', 'Không đóng']]) +
         '<div class="grid2">' + inp('TyLeBH', 'Tỷ lệ người lao động đóng (%)', 'number', 'step="0.1"') + inp('TranLuongBH', 'Mức lương đóng BH tối đa (đ)', 'number') + '</div></div>' +
+      '<div class="card"><h3>Cách tính lương</h3>' + radio('CheDoLuong', [['DAIVIET', 'Theo file Excel Đại Việt'], ['CHUAN', 'Tổng quát (OT ×1.5/×2/×3 theo ngày)']]) +
+        '<div class="grid3">' + inp('CongChuanLuong', 'Công chuẩn chia lương', 'number') + inp('HeSoOTChung', 'Hệ số tăng ca (chung)', 'number', 'step="0.1"') + inp('NguongOTMienThue', 'Giờ OT đầu miễn thuế', 'number') + '</div>' +
+        '<div class="grid2">' + inp('ThueThoiVu', 'Thuế thời vụ / không BH (%)', 'number', 'step="0.5"') + '</div>' +
+        '<div class="small muted mt">Chế độ Đại Việt: lương = (công + phép + lễ) × lương cơ bản ÷ công chuẩn; tăng ca ×1.5, 40 giờ đầu miễn thuế; người không đóng BH khấu trừ thẳng 10%.</div></div>' +
       '<div class="card"><h3>Thuế TNCN & tăng ca</h3><div class="grid2">' + inp('GiamTruBanThan', 'Giảm trừ bản thân / tháng (đ)', 'number') + inp('GiamTruPhuThuoc', 'Giảm trừ mỗi người phụ thuộc (đ)', 'number') + '</div>' +
-        inp('BieuThue', 'Biểu thuế lũy tiến (ngưỡng:thuế suất%, 0 = phần còn lại)') + inp('HeSoOT', 'Hệ số OT: ngày thường, ngày nghỉ tuần, ngày lễ') + '</div>' +
+        inp('BieuThue', 'Biểu thuế lũy tiến (ngưỡng:thuế suất%, 0 = phần còn lại)') + inp('HeSoOT', 'Hệ số OT khi dùng chế độ tổng quát: ngày thường, nghỉ tuần, lễ') + '</div>' +
       '<div class="card"><h3>Quét khuôn mặt</h3>' + radio('BatBuocKhuonMat', [['CO', 'Bắt buộc quét đúng khuôn mặt'], ['KHONG', 'Tắt quét mặt']]) +
         '<div class="grid2">' + inp('NguongKhuonMat', 'Độ chặt so khớp (0,4 rất chặt – 0,6 dễ)', 'number', 'step="0.05" min="0.3" max="0.7"') + '</div>' +
         '<div class="small muted mt">Mặc định 0,5. Nếu nhân viên hay bị báo "không khớp" dù đúng người, tăng lên 0,55. Nếu lo người khác chấm hộ, giảm xuống 0,45.</div></div>' +
