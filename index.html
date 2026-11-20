@@ -1237,7 +1237,8 @@ async function aPay() {
     };
     $('#pCalc').onclick = async () => {
       if (rows.length && !(await confirmBox('Tính lại lương tháng ' + vnDate(PAY_MONTH) + '? Kết quả cũ sẽ bị thay thế.', 'Tính lại'))) return;
-      const cc = ($('#pCC') && $('#pCC').value || '').replace(/\D/g, ''); try { const r = await call('calcPayroll', { Thang: PAY_MONTH, CongChuan: cc }); toast('Đã tính lương cho ' + r.SoNV + ' người (công chuẩn ' + r.CongChuan + ')', 'ok'); aPay(); } catch (e) { fail(e); }
+      const btn = $('#pCalc'); if (btn.disabled) return; btn.disabled = true; const old = btn.textContent; btn.textContent = 'Đang tính…';
+      const cc = ($('#pCC') && $('#pCC').value || '').replace(/\D/g, ''); try { const r = await call('calcPayroll', { Thang: PAY_MONTH, CongChuan: cc }); toast('Đã tính lương cho ' + r.SoNV + ' người (công chuẩn ' + r.CongChuan + ')', 'ok'); aPay(); } catch (e) { fail(e); btn.disabled = false; btn.textContent = old; }
     };
     if (rows.length) {
       $('#pExport').onclick = async () => {
