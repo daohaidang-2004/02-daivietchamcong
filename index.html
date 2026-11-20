@@ -1200,7 +1200,8 @@ async function aPay() {
     body().innerHTML = '<div class="row wrap between mb"><h2>Tính lương</h2><input type="month" class="i" style="width:auto" id="pM" value="' + PAY_MONTH + '"></div>' +
       '<div class="card"><div class="row between wrap"><div><h3>Bước 1 · Thưởng, tạm ứng, khấu trừ tháng ' + vnDate(PAY_MONTH) + '</h3><div class="small muted">Bỏ qua nếu không có. Phụ cấp cố định nhập trong hồ sơ nhân viên.</div></div><button class="btn ghost" id="pAdjT">' + (adj.some(a => a.Thuong || a.TamUng || a.KhauTruKhac) ? 'Xem / sửa' : 'Nhập') + '</button></div><div id="pAdj" class="hidden mt"></div></div>' +
       '<div class="card"><div class="row between wrap"><div><h3>Bước 2 · Tính lương</h3><div class="small muted">Lấy công, đơn đã duyệt, OT, phụ cấp → tính BH, thuế, phạt, thực lĩnh.</div></div>' +
-      '<button class="btn" id="pCalc"' + (p.CongBo ? ' disabled' : '') + '>' + (rows.length ? 'Tính lại' : 'Tính lương') + '</button></div></div>' +
+      '<button class="btn" id="pCalc"' + (p.CongBo ? ' disabled' : '') + '>' + (rows.length ? 'Tính lại' : 'Tính lương') + '</button></div>' +
+      '<div class="row wrap mt" style="align-items:flex-end"><div><label class="f" style="margin-top:0">Công chuẩn tháng này (để trống = app tự đếm)</label><input class="i" id="pCC" type="number" style="width:160px" value="' + (p.CongChuan || '') + '" placeholder="tự đếm"></div><span class="small muted">Tháng nhiều Chủ nhật thì công chuẩn ít hơn.</span></div></div>' +
       (rows.length ? '<div class="card"><div class="row between wrap mb"><div><h3>Bước 3 · Kiểm tra & công bố</h3><div class="small muted">' + (p.CongBo ? '<span class="badge b-ok">Đã công bố</span> Nhân viên đã xem được phiếu lương.' : '<span class="badge b-warn">Chưa công bố</span> Nhân viên chưa thấy. Bấm vào 1 dòng để xem phiếu.') + '</div></div>' +
         '<button class="btn ' + (p.CongBo ? 'light' : 'ok') + '" id="pPub">' + (p.CongBo ? 'Hủy công bố' : 'Công bố cho nhân viên') + '</button></div>' +
         '<div class="stats"><div class="stat"><b>' + rows.length + '</b><span>Nhân viên</span></div><div class="stat"><b class="num" style="font-size:18px">' + money(sum('TongThuNhap')) + '</b><span>Tổng thu nhập</span></div>' +
@@ -1232,7 +1233,7 @@ async function aPay() {
     };
     $('#pCalc').onclick = async () => {
       if (rows.length && !(await confirmBox('Tính lại lương tháng ' + vnDate(PAY_MONTH) + '? Kết quả cũ sẽ bị thay thế.', 'Tính lại'))) return;
-      try { const r = await call('calcPayroll', { Thang: PAY_MONTH }); toast('Đã tính lương cho ' + r.SoNV + ' người', 'ok'); aPay(); } catch (e) { fail(e); }
+      const cc = ($('#pCC') && $('#pCC').value || '').replace(/\D/g, ''); try { const r = await call('calcPayroll', { Thang: PAY_MONTH, CongChuan: cc }); toast('Đã tính lương cho ' + r.SoNV + ' người (công chuẩn ' + r.CongChuan + ')', 'ok'); aPay(); } catch (e) { fail(e); }
     };
     if (rows.length) {
       $('#pPub').onclick = async () => {
@@ -1270,7 +1271,9 @@ async function sGen() {
       '<div class="card"><h3>Bảo hiểm</h3>' + radio('CheDoDongBH', [['RIENG', 'Theo mức lương đóng BH riêng từng người'], ['MUCLUONG', 'Theo lương cơ bản (lương tháng)'], ['KHONG', 'Không đóng']]) +
         '<div class="grid2">' + inp('TyLeBH', 'Tỷ lệ người lao động đóng (%)', 'number', 'step="0.1"') + inp('TranLuongBH', 'Mức lương đóng BH tối đa (đ)', 'number') + '</div></div>' +
       '<div class="card"><h3>Cách tính lương</h3>' + radio('CheDoLuong', [['DAIVIET', 'Theo file Excel Đại Việt'], ['CHUAN', 'Tổng quát (OT ×1.5/×2/×3 theo ngày)']]) +
-        '<div class="grid3">' + inp('CongChuanLuong', 'Công chuẩn chia lương', 'number') + inp('HeSoOTChung', 'Hệ số tăng ca (chung)', 'number', 'step="0.1"') + inp('NguongOTMienThue', 'Giờ OT đầu miễn thuế', 'number') + '</div>' +
+        '<label class="f">Công chuẩn chia lương</label>' + radio('CheDoCongChuanLuong', [['THUCTE', 'Tự đếm theo tháng (trừ Chủ nhật)'], ['CODINH', 'Cố định số dưới đây']]) +
+        '<div class="grid3">' + inp('CongChuanLuong', 'Công chuẩn cố định', 'number') + inp('HeSoOTChung', 'Hệ số tăng ca (chung)', 'number', 'step="0.1"') + inp('NguongOTMienThue', 'Giờ OT đầu miễn thuế', 'number') + '</div>' +
+        '<div class="small muted mt">Tự đếm: tháng nhiều Chủ nhật (như tháng 11 có 5 CN) công chuẩn tự giảm còn 25, tháng ít Chủ nhật tăng lên 27 — giống file Excel.</div>' +
         '<div class="grid2">' + inp('ThueThoiVu', 'Thuế thời vụ / không BH (%)', 'number', 'step="0.5"') + '</div>' +
         '<div class="small muted mt">Chế độ Đại Việt: lương = (công + phép + lễ) × lương cơ bản ÷ công chuẩn; tăng ca ×1.5, 40 giờ đầu miễn thuế; người không đóng BH khấu trừ thẳng 10%.</div></div>' +
       '<div class="card"><h3>Thuế TNCN & tăng ca</h3><div class="grid2">' + inp('GiamTruBanThan', 'Giảm trừ bản thân / tháng (đ)', 'number') + inp('GiamTruPhuThuoc', 'Giảm trừ mỗi người phụ thuộc (đ)', 'number') + '</div>' +
