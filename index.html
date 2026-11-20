@@ -1032,6 +1032,7 @@ function empForm(e, branches) {
     inp('MucLuong', '<span id="mlLabel">Lương cơ bản / tháng</span> (đ)', 'text', 'inputmode="numeric" data-money') +
     inp('PhuCapChiuThue', 'Phụ cấp dự án + chức vụ (đ, chia theo công)', 'text', 'inputmode="numeric" data-money') +
     inp('LuongDongBH', 'Lương đóng bảo hiểm (đ, 0 = không đóng)', 'text', 'inputmode="numeric" data-money') +
+    (PAYMODE === 'DAIVIET' ? '<div><label class="f">Loại thuế TNCN</label>' + sel('LoaiThue', [['CHINHTHUC', 'Chính thức (thuế lũy tiến)'], ['THOIVU', 'Thời vụ / thử việc (trừ thẳng 10%)']], e.LoaiThue || (n(e.LuongDongBH) > 0 ? 'CHINHTHUC' : 'THOIVU')) + '</div>' : '') +
     inp('NguoiPhuThuoc', 'Số người phụ thuộc (giảm trừ thuế)', 'number', 'min="0"') +
     inp('DonGiaOT', 'Giá 1 giờ tăng ca riêng (đ, trống = app tự tính)', 'text', 'inputmode="numeric" data-money') +
     (PAYMODE === 'CHUAN' ? inp('PhuCapKhongChiuThue', 'Phụ cấp không chịu thuế (đ)', 'text', 'inputmode="numeric" data-money') : '') +
@@ -1212,7 +1213,7 @@ async function aPay() {
         '<div class="tbl-wrap"><table class="t"><thead><tr><th>Mã</th><th>Họ tên</th><th class="right">Công</th><th class="right">Lương công</th><th class="right">OT</th><th class="right">PC + thưởng</th><th class="right">Tổng TN</th><th class="right">BH</th><th class="right">Thuế</th><th class="right">Phạt/TƯ/khác</th><th class="right">Thực lĩnh</th></tr></thead><tbody>' +
         rows.map(r => '<tr class="click" data-ma="' + esc(r.MaNV) + '"><td><b>' + esc(r.MaNV) + '</b></td><td>' + esc(r.HoTen) + (r.GhiChu ? ' <span title="' + esc(r.GhiChu) + '" class="badge b-warn">!</span>' : '') + '</td><td class="right num">' + fmtNum(n(r.CongThucTe) + n(r.CongPhep) + n(r.CongLe)) + '</td><td class="right num">' + money(r.LuongCong) + '</td><td class="right num">' + (n(r.TienOT) ? money(r.TienOT) : '') + '</td><td class="right num">' + money(n(r.PhuCapChiuThue) + n(r.PhuCapKhongChiuThue) + n(r.Thuong)) + '</td><td class="right num">' + money(r.TongThuNhap) + '</td><td class="right num">' + money(r.TienBH) + '</td><td class="right num">' + money(r.ThueTNCN) + '</td><td class="right num">' + money(n(r.PhatMuon) + n(r.TamUng) + n(r.KhauTruKhac)) + '</td><td class="right num"><b>' + money(r.ThucLinh) + '</b></td></tr>').join('') +
         '</tbody><tfoot><tr><td colspan="3">Tổng</td><td class="right num">' + money(sum('LuongCong')) + '</td><td class="right num">' + money(sum('TienOT')) + '</td><td class="right num">' + money(sum('PhuCapChiuThue') + sum('PhuCapKhongChiuThue') + sum('Thuong')) + '</td><td class="right num">' + money(sum('TongThuNhap')) + '</td><td class="right num">' + money(sum('TienBH')) + '</td><td class="right num">' + money(sum('ThueTNCN')) + '</td><td class="right num">' + money(sum('PhatMuon') + sum('TamUng') + sum('KhauTruKhac')) + '</td><td class="right num">' + money(sum('ThucLinh')) + '</td></tr></tfoot></table></div>' +
-        '<div class="small muted mt">Bảng lương đầy đủ (tất cả cột) nằm ở sheet <b>BangLuong</b> trong Google Sheet. Mở sheet và chọn Tệp → Tải xuống → Excel để gửi kế toán hoặc ngân hàng.</div></div>'
+        '<div class="row wrap mt" style="align-items:center;gap:10px"><button class="btn ok" id="pExport">⬇ Tải bảng lương Excel (tiếng Việt)</button><span class="small muted">File cột tiếng Việt, đủ tổng cộng &amp; chỗ ký tên — gửi thẳng kế toán / ngân hàng.</span></div></div>'
       : '<div class="card empty">Chưa tính lương tháng này</div>');
     $('#pM').onchange = e => { PAY_MONTH = e.target.value || PAY_MONTH; aPay(); };
     $('#pAdjT').onclick = () => {
@@ -1239,6 +1240,20 @@ async function aPay() {
       const cc = ($('#pCC') && $('#pCC').value || '').replace(/\D/g, ''); try { const r = await call('calcPayroll', { Thang: PAY_MONTH, CongChuan: cc }); toast('Đã tính lương cho ' + r.SoNV + ' người (công chuẩn ' + r.CongChuan + ')', 'ok'); aPay(); } catch (e) { fail(e); }
     };
     if (rows.length) {
+      $('#pExport').onclick = async () => {
+        const b = $('#pExport'), old = b.innerHTML; b.disabled = true; b.innerHTML = 'Đang tạo file…';
+        try {
+          const r = await call('exportPayroll', { Thang: PAY_MONTH });
+          const bin = atob(r.Data), arr = new Uint8Array(bin.length);
+          for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+          const blob = new Blob([arr], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+          const url = URL.createObjectURL(blob), a = document.createElement('a');
+          a.href = url; a.download = r.FileName; document.body.appendChild(a); a.click();
+          setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1500);
+          toast('Đã tải file Excel bảng lương', 'ok');
+        } catch (e) { fail(e); }
+        b.disabled = false; b.innerHTML = old;
+      };
       $('#pPub').onclick = async () => {
         const on = !p.CongBo;
         if (!(await confirmBox(on ? 'Công bố phiếu lương tháng ' + vnDate(PAY_MONTH) + '? Mỗi nhân viên sẽ xem được phiếu lương của mình.' : 'Hủy công bố? Nhân viên sẽ tạm thời không xem được phiếu lương tháng này.', on ? 'Công bố' : 'Hủy công bố'))) return;
