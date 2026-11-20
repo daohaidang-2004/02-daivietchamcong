@@ -3,9 +3,6 @@
 <head>
 
 <meta charset="utf-8">
-<title>Chấm công Đại Việt</title>
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="mobile-web-app-capable" content="yes">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -159,6 +156,12 @@ table.t input.i{min-height:34px;padding:6px 8px;font-size:13px;min-width:110px}
   body{background:#fff}
 }
 </style>
+<title>Chấm công Đại Việt</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0a7">
+<script>window.API_URL="https://script.google.com/macros/s/AKfycbwTOLbadnnYZcG4N1Affk0jBYyMfmZ6UqxZ-3p0pu52zO5B8JgXlzYN5ALQR0_8nSgB6w/exec";</script>
 </head>
 <body>
 <div id="loading" class="hidden"></div>
@@ -200,7 +203,7 @@ table.t input.i{min-height:34px;padding:6px 8px;font-size:13px;min-width:110px}
 
 <script>
 /* Chỉ dùng khi đặt trang này ngoài Apps Script: dán địa chỉ ứng dụng web (.../exec) vào đây */
-window.API_URL = 'https://script.google.com/macros/s/AKfycbwTOLbadnnYZcG4N1Affk0jBYyMfmZ6UqxZ-3p0pu52zO5B8JgXlzYN5ALQR0_8nSgB6w/exec';
+window.API_URL = window.API_URL || '';
 </script>
 <script>
 /* ===================== NỀN TẢNG ===================== */
@@ -1271,9 +1274,9 @@ async function sGen() {
       '<div class="card"><h3>Bảo hiểm</h3>' + radio('CheDoDongBH', [['RIENG', 'Theo mức lương đóng BH riêng từng người'], ['MUCLUONG', 'Theo lương cơ bản (lương tháng)'], ['KHONG', 'Không đóng']]) +
         '<div class="grid2">' + inp('TyLeBH', 'Tỷ lệ người lao động đóng (%)', 'number', 'step="0.1"') + inp('TranLuongBH', 'Mức lương đóng BH tối đa (đ)', 'number') + '</div></div>' +
       '<div class="card"><h3>Cách tính lương</h3>' + radio('CheDoLuong', [['DAIVIET', 'Theo file Excel Đại Việt'], ['CHUAN', 'Tổng quát (OT ×1.5/×2/×3 theo ngày)']]) +
-        '<label class="f">Công chuẩn chia lương</label>' + radio('CheDoCongChuanLuong', [['THUCTE', 'Tự đếm theo tháng (trừ Chủ nhật)'], ['CODINH', 'Cố định số dưới đây']]) +
+        '<label class="f">Công chuẩn chia lương</label>' + radio('CheDoCongChuanLuong', [['THEOLICH', 'Theo lịch từng người (văn phòng T7 nửa ngày tự đúng)'], ['THUCTE', 'Một số chung: ngày tháng trừ Chủ nhật'], ['CODINH', 'Cố định số dưới đây']]) +
         '<div class="grid3">' + inp('CongChuanLuong', 'Công chuẩn cố định', 'number') + inp('HeSoOTChung', 'Hệ số tăng ca (chung)', 'number', 'step="0.1"') + inp('NguongOTMienThue', 'Giờ OT đầu miễn thuế', 'number') + '</div>' +
-        '<div class="small muted mt">Tự đếm: tháng nhiều Chủ nhật (như tháng 11 có 5 CN) công chuẩn tự giảm còn 25, tháng ít Chủ nhật tăng lên 27 — giống file Excel.</div>' +
+        '<div class="small muted mt">Theo lịch: mỗi nhóm (văn phòng, công nhân…) có công chuẩn riêng, tự đổi theo số Chủ nhật của tháng. Đây là cách công bằng nhất cho cả người nghỉ chiều T7.</div>' +
         '<div class="grid2">' + inp('ThueThoiVu', 'Thuế thời vụ / không BH (%)', 'number', 'step="0.5"') + '</div>' +
         '<div class="small muted mt">Chế độ Đại Việt: lương = (công + phép + lễ) × lương cơ bản ÷ công chuẩn; tăng ca ×1.5, 40 giờ đầu miễn thuế; người không đóng BH khấu trừ thẳng 10%.</div></div>' +
       '<div class="card"><h3>Thuế TNCN & tăng ca</h3><div class="grid2">' + inp('GiamTruBanThan', 'Giảm trừ bản thân / tháng (đ)', 'number') + inp('GiamTruPhuThuoc', 'Giảm trừ mỗi người phụ thuộc (đ)', 'number') + '</div>' +
