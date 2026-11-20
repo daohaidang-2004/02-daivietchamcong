@@ -1341,7 +1341,7 @@ async function sBranch() {
     const list = await call('listBranches');
     $('#sBody').innerHTML = '<div class="row between mb"><div class="small muted">Nhân viên chỉ chấm công được khi đứng trong bán kính của một chi nhánh.</div><button class="btn" id="bAdd">+ Thêm chi nhánh</button></div>' +
       '<div class="card"><div class="list">' + list.map(b => '<div class="it"><div class="av">' + IC.pin + '</div><div class="grow"><b>' + esc(b.TenChiNhanh) + '</b> ' + (b.HoatDong === 'KHONG' ? '<span class="badge b-grey">Tạm tắt</span>' : '') +
-        '<div class="tiny muted">' + esc(b.DiaChi || '') + ' · ' + esc(b.ViDo) + ', ' + esc(b.KinhDo) + ' · bán kính ' + esc(b.BanKinh) + 'm</div></div>' +
+        '<div class="tiny muted">' + esc(b.DiaChi || '') + ' · bán kính ' + esc(b.BanKinh) + 'm' + (b.GioVao && b.GioRa ? ' · giờ làm ' + esc(b.GioVao) + '–' + esc(b.GioRa) : ' · giờ theo lịch NV') + '</div></div>' +
         '<a class="btn light sm" target="_blank" href="https://www.google.com/maps?q=' + encodeURIComponent(b.ViDo + ',' + b.KinhDo) + '">Bản đồ</a><button class="btn ghost sm" data-b="' + esc(b.ID) + '">Sửa</button></div>').join('') + '</div></div>';
     $('#bAdd').onclick = () => branchForm(null, list.length);
     $$('[data-b]').forEach(x => x.onclick = () => branchForm(list.find(b => b.ID === x.dataset.b), list.length));
@@ -1359,6 +1359,12 @@ function branchForm(b, count) {
     '<div class="tiny muted mt">Cách lấy tọa độ: mở Google Maps, nhấn giữ vào vị trí công ty, rồi sao chép dãy số hiện ra. Hoặc đứng tại công ty và bấm nút trên.</div>' +
     '<div class="grid2"><div><label class="f">Bán kính cho phép (mét)</label><input class="i" type="number" name="BanKinh" value="' + esc(b.BanKinh) + '" min="20"></div>' +
     '<div><label class="f">Trạng thái</label><select class="i" name="HoatDong"><option value="CO">Đang dùng</option><option value="KHONG"' + (b.HoatDong === 'KHONG' ? ' selected' : '') + '>Tạm tắt</option></select></div></div>' +
+    '<h3 class="mt2">Giờ làm tại công trình này</h3><div class="small muted mb">Để trống thì tính theo lịch làm việc của nhân viên. Điền vào thì ai chấm công ở đây sẽ tính theo giờ này.</div>' +
+    '<div class="grid2"><div><label class="f">Giờ vào</label><input class="i" type="time" name="GioVao" value="' + esc((b.GioVao || '')) + '"></div>' +
+    '<div><label class="f">Giờ ra</label><input class="i" type="time" name="GioRa" value="' + esc((b.GioRa || '')) + '"></div>' +
+    '<div><label class="f">Nghỉ trưa từ</label><input class="i" type="time" id="bnt1" value="' + esc((String(b.NghiTrua || '').split('-')[0] || '')) + '"></div>' +
+    '<div><label class="f">Nghỉ trưa đến</label><input class="i" type="time" id="bnt2" value="' + esc((String(b.NghiTrua || '').split('-')[1] || '')) + '"></div>' +
+    '<div><label class="f">Số giờ làm chuẩn / ngày</label><input class="i" type="number" step="0.5" name="GioChuan" value="' + esc(b.GioChuan || '') + '"></div></div>' +
     '<div class="row mt2">' + (!isNew && count > 1 ? '<button class="btn light" id="bDel" style="color:var(--bad)">Xóa</button>' : '') + '<span class="grow"></span><button class="btn" id="bSave">Lưu</button></div>');
   $('#bHere', m).onclick = async () => {
     toast('Đang lấy vị trí…');
@@ -1371,6 +1377,8 @@ function branchForm(b, count) {
     const f = formData(m);
     const c = $('#bCoord', m).value.split(/[,;\s]+/).filter(Boolean);
     f.ViDo = c[0]; f.KinhDo = c[1]; f.ID = b.ID;
+    const a = $('#bnt1', m).value, bb = $('#bnt2', m).value;
+    f.NghiTrua = a && bb ? a + '-' + bb : '';
     try { await call('saveBranch', f); closeModal(); toast('Đã lưu', 'ok'); sBranch(); } catch (e) { fail(e); }
   };
   if ($('#bDel', m)) $('#bDel', m).onclick = async () => {
