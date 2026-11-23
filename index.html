@@ -106,6 +106,9 @@ table.t input.i{min-height:34px;padding:6px 8px;font-size:13px;min-width:110px}
 .slip .hd .co{font-weight:700;font-size:14px;text-transform:uppercase}
 .slip .hd h2{margin-top:6px}
 .slip .ln{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed var(--line);font-size:14px;gap:10px}
+.pwbox{position:relative}.pwbox .i{padding-right:46px}
+.pwbox .eye{position:absolute;right:4px;top:50%;transform:translateY(-50%);width:38px;height:38px;border:0;background:none;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:8px}
+.pwbox .eye:hover{color:var(--pri)}
 .slip .ln.sub{padding-left:14px;color:var(--muted);font-size:13px}
 .slip .sec{font-weight:700;margin-top:14px;padding:6px 0;color:var(--pri);font-size:13px;text-transform:uppercase;letter-spacing:.3px}
 .slip .net{display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding:14px;background:var(--pri-soft);border-radius:12px;font-weight:700}
@@ -177,7 +180,7 @@ table.t input.i{min-height:34px;padding:6px 8px;font-size:13px;min-width:110px}
       <label class="f">Mã nhân viên</label>
       <input class="i" id="lgMa" autocapitalize="characters" autocomplete="username" placeholder="VD: NV001" required>
       <label class="f">Mật khẩu</label>
-      <input class="i" id="lgPw" type="password" autocomplete="current-password" required>
+      <div class="pwbox"><input class="i" id="lgPw" type="password" autocomplete="current-password" required><button type="button" class="eye" data-eye title="Hiện / ẩn mật khẩu" aria-label="Hiện / ẩn mật khẩu"></button></div>
       <button class="btn block mt2" id="lgBtn">Đăng nhập</button>
     </form>
     <div class="tiny muted center mt">Quên mật khẩu? Liên hệ quản lý để được đặt lại.</div>
@@ -294,7 +297,7 @@ function scheduleRefresh() {
 /* Đo tốc độ: thời gian cả vòng (máy ↔ Google) và thời gian máy chủ xử lý, lưu 40 lần gần nhất trên máy này */
 const ACT_VN = { today: 'Mở trang chấm công', checkIn: 'Chấm công vào/ra', myAttendance: 'Lịch sử chấm công', myRequests: 'Đơn của tôi', createRequest: 'Gửi đơn',
   myPayslips: 'Phiếu lương', me: 'Mở app', login: 'Đăng nhập', dashboard: 'Tổng quan', listEmployees: 'Danh sách nhân viên', saveEmployee: 'Lưu hồ sơ',
-  deleteEmployee: 'Xóa nhân viên', listAttendance: 'Bảng công', saveAttendance: 'Sửa công', listRequests: 'Danh sách đơn', decideRequest: 'Duyệt 1 đơn',
+  deleteEmployee: 'Xóa nhân viên', deleteEmployees: 'Xóa nhiều nhân viên', listAttendance: 'Bảng công', saveAttendance: 'Sửa công', listRequests: 'Danh sách đơn', decideRequest: 'Duyệt 1 đơn',
   decideMany: 'Duyệt tất cả', getAdjustments: 'Bước 1 điều chỉnh', saveAdjustments: 'Lưu điều chỉnh', calcPayroll: 'Tính lương', getPayroll: 'Xem bảng lương',
   publishPayroll: 'Công bố lương', setPaid: 'Đánh dấu đã trả', exportPayroll: 'Xuất Excel lương', exportBank: 'File chuyển khoản', otSites: 'Trang tăng ca',
   registerOT: 'Đăng ký tăng ca', getSettings: 'Cài đặt', listBranches: 'Công trình', listSchedules: 'Lịch làm việc', netOT: 'Tăng ca lương NET' };
@@ -868,7 +871,17 @@ function reqForm() {
 /* ===================== PHIẾU LƯƠNG ===================== */
 const LOAI_LUONG = { THANG: 'Lương tháng', NGAY: 'Lương ngày', GIO: 'Lương giờ' };
 
+/** Chia thu nhập thành các cột giống file Excel: Lương tháng | Phụ cấp thực tế | Tăng ca 40h | Thưởng, PC khác = Tổng.
+ *  Dòng tính lương cũ (chưa có cột mới) thì suy ra Phụ cấp thực tế từ Tổng. */
+function cotLuong(r) {
+  const lt = n(r.LuongCong) + n(r.TienLe), khac = n(r.Thuong) + n(r.PhuCapKhongChiuThue);
+  const co = r.PhuCapThucTe !== '' && r.PhuCapThucTe != null;
+  const pc = co ? n(r.PhuCapThucTe) : n(r.TongThuNhap) - lt - n(r.TienOT) - khac;
+  const coChia = r.PhuCapDaChia !== '' && r.PhuCapDaChia != null;
+  return { lt, pc, khac, pcChia: coChia ? n(r.PhuCapDaChia) : null, otChiu: coChia ? n(r.TienOTChiuThue) : 0 };
+}
 function slipHtml(r, co) {
+  const c = cotLuong(r);
   const ln = (a, b, cls) => '<div class="ln ' + (cls || '') + '"><span>' + a + '</span><span class="num">' + b + '</span></div>';
   const ot = n(r.GioOT150) + n(r.GioOT200) + n(r.GioOT300);
   return '<div class="slip"><div class="hd"><div class="co">' + esc(co || '') + '</div><h2>PHIẾU LƯƠNG THÁNG ' + esc(vnDate(r.Thang)) + '</h2>' +
@@ -884,12 +897,13 @@ function slipHtml(r, co) {
     (r.LoaiLuong === 'GIO' ? ln('Số giờ làm', fmtNum(r.SoGioLam)) : '') +
     (ot ? ln('Giờ tăng ca', fmtNum(ot) + ' giờ') : '') +
     '<div class="sec">Thu nhập</div>' +
-    ln('Lương theo công', money(r.LuongCong)) +
-    (n(r.PhuCapChiuThue) ? ln('Phụ cấp (dự án, chức vụ)', money(r.PhuCapChiuThue)) : '') +
-    (n(r.GioOT200) ? ln('Tăng ca chịu thuế (gộp phụ cấp)', fmtNum(r.GioOT200) + 'h', 'sub') : '') +
-    (n(r.TienOT) ? ln('Tăng ca (miễn thuế)', money(r.TienOT)) : '') +
-    (n(r.GioOT150) ? ln(fmtNum(r.GioOT150) + ' giờ đầu, miễn thuế', '', 'sub') : '') +
-    (n(r.GioLe) ? ln('Làm ngày lễ ' + fmtNum(r.GioLe) + ' giờ – phần thêm cho đủ × 3', money(r.TienLe)) : '') +
+    ln('Lương tháng', money(c.lt)) +
+    (n(r.TienLe) ? ln('Lương theo công', money(r.LuongCong), 'sub') + ln('Làm ngày lễ ' + fmtNum(r.GioLe) + ' giờ – phần thêm cho đủ × 3', money(r.TienLe), 'sub') : '') +
+    (c.pc ? ln('Phụ cấp thực tế', money(c.pc)) : '') +
+    (c.pc && c.pcChia !== null ? ln('Phụ cấp dự án, chức vụ' + (n(r.PhuCapChiuThue) && c.pcChia !== n(r.PhuCapChiuThue) ? ' (chia theo công, đủ tháng ' + money(r.PhuCapChiuThue) + ')' : ''), money(c.pcChia), 'sub') : '') +
+    (n(r.GioOT200) && c.otChiu ? ln('Tăng ca từ giờ 41: ' + fmtNum(r.GioOT200) + ' giờ (chịu thuế)', money(c.otChiu), 'sub') : '') +
+    (n(r.GioOT200) && c.pcChia === null ? ln('Gồm tăng ca từ giờ 41: ' + fmtNum(r.GioOT200) + ' giờ (chịu thuế)', '', 'sub') : '') +
+    (n(r.TienOT) ? ln('Tăng ca ' + fmtNum(r.GioOT150) + ' giờ đầu (miễn thuế)', money(r.TienOT)) : '') +
     (n(r.KhongTinhOT) ? ln('Tăng ca ' + fmtNum(r.KhongTinhOT) + ' giờ: tháng này không tính (lương NET)', '', 'sub') : '') +
     (n(r.PhuCapKhongChiuThue) ? ln('Phụ cấp không chịu thuế', money(r.PhuCapKhongChiuThue)) : '') +
     (n(r.Thuong) ? ln('Thưởng', money(r.Thuong)) : '') +
@@ -1021,10 +1035,25 @@ function renderOT(r) {
 }
 
 /* ===================== TÀI KHOẢN ===================== */
+const EYE_ON = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+const EYE_OFF = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.1 10.1 0 0 1 12 19c-6.5 0-10-7-10-7a18.4 18.4 0 0 1 5.06-5.94M9.9 4.24A9.1 9.1 0 0 1 12 4c6.5 0 10 7 10 7a18.5 18.5 0 0 1-2.16 3.19"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+/** Nút con mắt cạnh ô mật khẩu: đang hiện chữ → bấm thành ****, bấm lại hiện chữ */
+function eyeIcon(btn) { const inp = btn.parentNode.querySelector('input'); btn.innerHTML = inp.type === 'password' ? EYE_ON : EYE_OFF; }
+document.addEventListener('click', e => {
+  const btn = e.target.closest && e.target.closest('[data-eye]');
+  if (!btn) return;
+  e.preventDefault();
+  const inp = btn.parentNode.querySelector('input');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+  eyeIcon(btn); inp.focus();
+});
+document.querySelectorAll('[data-eye]').forEach(eyeIcon);
 function pwFormHtml() {
-  return '<label class="f">Mật khẩu hiện tại</label><input class="i" type="password" name="MatKhauCu" autocomplete="current-password">' +
-    '<label class="f">Mật khẩu mới (ít nhất 6 ký tự)</label><input class="i" type="password" name="MatKhauMoi" autocomplete="new-password">' +
-    '<label class="f">Nhập lại mật khẩu mới</label><input class="i" type="password" name="NhapLai" autocomplete="new-password">' +
+  // Ô mật khẩu hiện chữ sẵn; bấm con mắt để che thành ****
+  const o = (nm, ac) => '<div class="pwbox"><input class="i" type="text" name="' + nm + '" autocomplete="' + ac + '" autocapitalize="off" spellcheck="false"><button type="button" class="eye" data-eye title="Ẩn / hiện mật khẩu" aria-label="Ẩn / hiện mật khẩu">' + EYE_OFF + '</button></div>';
+  return '<label class="f">Mật khẩu hiện tại</label>' + o('MatKhauCu', 'current-password') +
+    '<label class="f">Mật khẩu mới (ít nhất 6 ký tự)</label>' + o('MatKhauMoi', 'new-password') +
+    '<label class="f">Nhập lại mật khẩu mới</label>' + o('NhapLai', 'new-password') +
     '<button class="btn block mt2" data-pw>Đổi mật khẩu</button>';
 }
 function bindPw(root, after) {
@@ -1152,24 +1181,55 @@ async function aEmp() {
     PAYMODE = (st.Values && st.Values.CheDoLuong) || 'DAIVIET';
     SETV = st.Values || {};
     let showQuit = false;
+    const chon = {}; // mã NV đang được tích để xóa hàng loạt
+    const bar = () => {
+      const n = Object.keys(chon).length, el = $('#eBulk');
+      if (!el) return;
+      el.classList.toggle('hidden', !n);
+      el.querySelector('b').textContent = n;
+    };
     const render = () => {
       const q = ($('#eSearch').value || '').toLowerCase();
       const rows = list.filter(e => (showQuit || e.TrangThai !== 'NGHIVIEC') && (!q || (e.HoTen + ' ' + e.MaNV + ' ' + e.SoDienThoai).toLowerCase().includes(q)));
-      $('#eList').innerHTML = rows.length ? '<div class="tbl-wrap"><table class="t"><thead><tr><th>Mã</th><th>Họ tên</th><th>Chức vụ</th><th>Chi nhánh</th><th>Lịch</th><th>Loại lương</th><th class="right">Mức lương</th><th>Trạng thái</th></tr></thead><tbody>' +
-        rows.map(e => '<tr class="click" data-ma="' + esc(e.MaNV) + '"><td><b>' + esc(e.MaNV) + '</b></td><td>' + esc(e.HoTen) + (e.VaiTro === 'ADMIN' ? ' <span class="badge b-pri">QL</span>' : '') + '</td><td>' + esc(e.ChucVu) + '</td><td>' +
+      $('#eList').innerHTML = rows.length ? '<div class="tbl-wrap"><table class="t"><thead><tr><th style="width:34px"><input type="checkbox" id="eAll" title="Chọn tất cả đang hiện"></th><th>Mã</th><th>Họ tên</th><th>Chức vụ</th><th>Chi nhánh</th><th>Lịch</th><th>Loại lương</th><th class="right">Mức lương</th><th>Trạng thái</th></tr></thead><tbody>' +
+        rows.map(e => '<tr class="click" data-ma="' + esc(e.MaNV) + '"><td data-stop><input type="checkbox" data-pick="' + esc(e.MaNV) + '"' + (chon[e.MaNV] ? ' checked' : '') + '></td><td><b>' + esc(e.MaNV) + '</b></td><td>' + esc(e.HoTen) + (e.VaiTro === 'ADMIN' ? ' <span class="badge b-pri">QL</span>' : '') + '</td><td>' + esc(e.ChucVu) + '</td><td>' +
           esc((branches.find(b => b.ID === e.ChiNhanh) || {}).TenChiNhanh || e.ChiNhanh) + '</td><td class="tiny">' + esc((scheds.find(x => x.ID === e.LichLamViec) || {}).TenLich || '<chưa chọn>') + '</td><td>' + esc(LOAI_LUONG[e.LoaiLuong] || '') + '</td><td class="right num">' + money(e.MucLuong) + '</td><td>' +
           (e.TrangThai === 'NGHIVIEC' ? '<span class="badge b-grey">Nghỉ việc</span>' : e.DaDoiMK ? '<span class="badge b-ok">Đang làm</span>' : '<span class="badge b-warn">Chưa đăng nhập</span>') +
           (e.TrangThai !== 'NGHIVIEC' && dangThuViec(e) ? ' <span class="badge b-pri">Thử việc đến ' + esc(vnDate(e.ThuViecDen).slice(0, 5)) + '</span>' : '') + '</td></tr>').join('') +
         '</tbody></table></div>' : '<div class="empty">Không có nhân viên</div>';
-      $$('#eList tr[data-ma]').forEach(tr => tr.onclick = () => empForm(list.find(e => e.MaNV === tr.dataset.ma), branches));
+      $$('#eList tr[data-ma]').forEach(tr => tr.onclick = ev => { if (ev.target.closest('[data-stop]')) return; empForm(list.find(e => e.MaNV === tr.dataset.ma), branches); });
+      $$('#eList [data-pick]').forEach(cb => cb.onchange = () => { if (cb.checked) chon[cb.dataset.pick] = true; else delete chon[cb.dataset.pick]; bar(); });
+      if ($('#eAll')) $('#eAll').onchange = ev => { $$('#eList [data-pick]').forEach(cb => { cb.checked = ev.target.checked; if (cb.checked) chon[cb.dataset.pick] = true; else delete chon[cb.dataset.pick]; }); bar(); };
+      bar();
     };
     const active = list.filter(e => e.TrangThai !== 'NGHIVIEC').length;
     body().innerHTML = '<div class="row wrap between mb"><h2>Nhân viên <span class="muted small">(' + active + ' đang làm)</span></h2><button class="btn" id="eAdd">+ Thêm nhân viên</button></div>' +
-      '<div class="card"><div class="row wrap mb"><input class="i grow" id="eSearch" placeholder="Tìm theo tên, mã, SĐT"><label class="chk" style="margin:0"><input type="checkbox" id="eQuit"> Hiện người nghỉ việc</label></div><div id="eList"></div></div>' +
+      '<div class="card"><div class="row wrap mb"><input class="i grow" id="eSearch" placeholder="Tìm theo tên, mã, SĐT"><label class="chk" style="margin:0"><input type="checkbox" id="eQuit"> Hiện người nghỉ việc</label></div>' +
+      '<div id="eBulk" class="gps bad mb hidden" style="align-items:center"><span class="grow">Đã chọn <b>0</b> người</span><button class="btn light sm" id="eBulkNo">Bỏ chọn</button><button class="btn bad sm" id="eBulkDel">Xóa những người đã chọn</button></div>' +
+      '<div id="eList"></div></div>' +
       '<div class="card flat small muted">Mẹo: nhập nhanh nhiều người bằng cách dán thẳng vào sheet <b>NhanVien</b> trong Google Sheet (bỏ trống cột MatKhauHash). Mỗi người đăng nhập lần đầu bằng mật khẩu mặc định và sẽ được yêu cầu đổi.</div>';
     $('#eSearch').oninput = render;
     $('#eQuit').onchange = e => { showQuit = e.target.checked; render(); };
     $('#eAdd').onclick = () => empForm(null, branches);
+    $('#eBulkNo').onclick = () => { Object.keys(chon).forEach(k => delete chon[k]); render(); };
+    $('#eBulkDel').onclick = async () => {
+      const ma = Object.keys(chon), ten = ma.map(m => { const x = list.find(e => e.MaNV === m); return x ? x.HoTen + ' (' + m + ')' : m; });
+      if (!ma.length) return;
+      if (!(await confirmBox('XÓA VĨNH VIỄN ' + ma.length + ' người: ' + ten.join(', ') + '? Xóa luôn chấm công, đơn từ, khuôn mặt, sổ nợ, bảng lương chưa công bố của họ. Không khôi phục được. Người đã có bảng lương công bố hoặc tài khoản quản lý sẽ được bỏ qua.', 'Xóa ' + ma.length + ' người'))) return;
+      // Ẩn ngay trên màn hình; máy chủ xóa phía sau
+      ma.forEach(m => { const tr = $('#eList tr[data-ma="' + m + '"]'); if (tr) tr.style.display = 'none'; });
+      $('#eBulk').classList.add('hidden');
+      toast('Đang xóa ' + ma.length + ' người…');
+      try {
+        const r = await call('deleteEmployees', { MaNV: ma });
+        Object.keys(chon).forEach(k => delete chon[k]);
+        if (r.BoQua.length) {
+          modal('Kết quả xóa', '<p>Đã xóa <b>' + r.DaXoa.length + '</b> người' + (r.DaXoa.length ? ': ' + esc(r.DaXoa.map(x => x.HoTen).join(', ')) : '') + '.</p>' +
+            '<p><b>Không xóa ' + r.BoQua.length + ' người:</b></p><ul class="small">' + r.BoQua.map(x => '<li>' + esc(x.LyDo) + '</li>').join('') + '</ul>');
+        } else toast('Đã xóa ' + r.DaXoa.length + ' người' + (r.SoDong.ChamCong ? ', ' + r.SoDong.ChamCong + ' dòng chấm công' : ''), 'ok');
+        aEmp();
+      } catch (err) { fail(err); aEmp(); }
+    };
     render();
   } catch (e) { fail(e); }
 }
@@ -1501,10 +1561,10 @@ async function aPay() {
         '<div class="stat"><b class="num" style="font-size:18px">' + money(sum('TienBH') + sum('ThueTNCN')) + '</b><span>BH + thuế NLĐ</span></div><div class="stat"><b class="num" style="font-size:18px;color:var(--pri)">' + money(sum('ThucLinh')) + '</b><span>Tổng thực lĩnh</span></div></div>' +
         '<div class="row wrap mb"><div class="chips" style="margin:0" id="pPaidF">' + [['', 'Tất cả'], ['CHUA', 'Chưa thanh toán (' + chuaTT.length + ')'], ['LECH', 'Thiếu / dư sau khi tính lại (' + rows.filter(r => lech(r)).length + ')']].map(f => '<button class="chip ' + (f[0] === PAY_PAIDF ? 'on' : '') + '" data-f="' + f[0] + '">' + f[1] + '</button>').join('') + '</div>' +
         '<span class="grow"></span>' + (chuaTT.length ? '<button class="btn light sm" id="pPaidAll">Tích đã thanh toán ' + (PAY_PAIDF === 'CHUA' || PAY_PAIDF === '' ? 'tất cả ' + chuaTT.length + ' người chưa TT' : '') + '</button>' : '') + '</div>' +
-        '<div class="tbl-wrap"><table class="t"><thead><tr><th>Mã</th><th>Họ tên</th><th class="right">Công</th><th class="right">Lương công</th><th class="right">OT + lễ</th><th class="right">PC + thưởng</th><th class="right">Tổng TN</th><th class="right">BH</th><th class="right">Thuế</th><th class="right">Trừ khác</th><th class="right">Thực lĩnh</th><th>Đã TT</th></tr></thead><tbody>' +
-        showRows.map(r => '<tr class="click" data-ma="' + esc(r.MaNV) + '"><td><b>' + esc(r.MaNV) + '</b></td><td>' + esc(r.HoTen) + (r.GhiChu ? ' <span title="' + esc(r.GhiChu) + '" class="badge b-warn">!</span>' : '') + '</td><td class="right num">' + fmtNum(n(r.CongThucTe) + n(r.CongPhep) + n(r.CongLe)) + '</td><td class="right num">' + money(r.LuongCong) + '</td><td class="right num">' + (n(r.TienOT) + n(r.TienLe) ? money(n(r.TienOT) + n(r.TienLe)) : '') + '</td><td class="right num">' + money(n(r.PhuCapChiuThue) + n(r.PhuCapKhongChiuThue) + n(r.Thuong)) + '</td><td class="right num">' + money(r.TongThuNhap) + '</td><td class="right num">' + money(r.TienBH) + '</td><td class="right num">' + money(r.ThueTNCN) + '</td><td class="right num">' + money(n(r.PhatMuon) + n(r.TamUng) + n(r.KhauTruKhac) + n(r.TruNo) + n(r.TruNghiNgang)) + '</td><td class="right num"><b>' + money(r.ThucLinh) + '</b></td>' +
+        '<div class="tbl-wrap"><table class="t"><thead><tr><th>Mã</th><th>Họ tên</th><th class="right">Công</th><th class="right">Lương tháng</th><th class="right" title="Phụ cấp dự án + chức vụ đã chia theo công, cộng tiền tăng ca từ giờ thứ 41 (chịu thuế)">Phụ cấp thực tế</th><th class="right" title="40 giờ tăng ca đầu, miễn thuế">Tăng ca 40h</th><th class="right">Thưởng, PC khác</th><th class="right">Tổng TN</th><th class="right">BH</th><th class="right">Thuế</th><th class="right">Trừ khác</th><th class="right">Thực lĩnh</th><th>Đã TT</th></tr></thead><tbody>' +
+        showRows.map(r => '<tr class="click" data-ma="' + esc(r.MaNV) + '"><td><b>' + esc(r.MaNV) + '</b></td><td>' + esc(r.HoTen) + (r.GhiChu ? ' <span title="' + esc(r.GhiChu) + '" class="badge b-warn">!</span>' : '') + '</td><td class="right num">' + fmtNum(n(r.CongThucTe) + n(r.CongPhep) + n(r.CongLe)) + '</td><td class="right num">' + money(cotLuong(r).lt) + '</td><td class="right num">' + money(cotLuong(r).pc) + '</td><td class="right num">' + (n(r.TienOT) ? money(r.TienOT) : '') + '</td><td class="right num">' + (cotLuong(r).khac ? money(cotLuong(r).khac) : '') + '</td><td class="right num">' + money(r.TongThuNhap) + '</td><td class="right num">' + money(r.TienBH) + '</td><td class="right num">' + money(r.ThueTNCN) + '</td><td class="right num">' + money(n(r.PhatMuon) + n(r.TamUng) + n(r.KhauTruKhac) + n(r.TruNo) + n(r.TruNghiNgang)) + '</td><td class="right num"><b>' + money(r.ThucLinh) + '</b></td>' +
           '<td class="nowrap" data-stop><input type="checkbox" data-paid="' + esc(r.MaNV) + '"' + (r.DaThanhToan === 'CO' ? ' checked' : '') + '>' + (lech(r) ? ' <span class="badge ' + (lech(r) > 0 ? 'b-bad' : 'b-warn') + '" title="Đã trả ' + money(r.SoDaTra) + '">' + (lech(r) > 0 ? 'còn thiếu ' + money(lech(r)) : 'trả dư ' + money(-lech(r))) + '</span>' : '') + '</td></tr>').join('') +
-        '</tbody><tfoot><tr><td colspan="3">Tổng</td><td class="right num">' + money(sum('LuongCong')) + '</td><td class="right num">' + money(sum('TienOT') + sum('TienLe')) + '</td><td class="right num">' + money(sum('PhuCapChiuThue') + sum('PhuCapKhongChiuThue') + sum('Thuong')) + '</td><td class="right num">' + money(sum('TongThuNhap')) + '</td><td class="right num">' + money(sum('TienBH')) + '</td><td class="right num">' + money(sum('ThueTNCN')) + '</td><td class="right num">' + money(sum('PhatMuon') + sum('TamUng') + sum('KhauTruKhac') + sum('TruNo') + sum('TruNghiNgang')) + '</td><td class="right num">' + money(sum('ThucLinh')) + '</td><td></td></tr></tfoot></table></div>' +
+        '</tbody><tfoot><tr><td colspan="3">Tổng</td><td class="right num">' + money(rows.reduce((t, r) => t + cotLuong(r).lt, 0)) + '</td><td class="right num">' + money(rows.reduce((t, r) => t + cotLuong(r).pc, 0)) + '</td><td class="right num">' + money(sum('TienOT')) + '</td><td class="right num">' + money(rows.reduce((t, r) => t + cotLuong(r).khac, 0)) + '</td><td class="right num">' + money(sum('TongThuNhap')) + '</td><td class="right num">' + money(sum('TienBH')) + '</td><td class="right num">' + money(sum('ThueTNCN')) + '</td><td class="right num">' + money(sum('PhatMuon') + sum('TamUng') + sum('KhauTruKhac') + sum('TruNo') + sum('TruNghiNgang')) + '</td><td class="right num">' + money(sum('ThucLinh')) + '</td><td></td></tr></tfoot></table></div>' +
         '<div class="row wrap mt" style="align-items:center;gap:10px"><button class="btn ok" id="pExport">⬇ Bảng lương Excel (tiếng Việt)</button><button class="btn ghost" id="pBank">⬇ File chuyển khoản ngân hàng</button><span class="small muted">File chuyển khoản gồm tên, số tài khoản, số tiền thực lĩnh, nội dung chuyển khoản.</span></div></div>'
       : '<div class="card empty">Chưa tính lương tháng này</div>');
     $('#pM').onchange = e => { PAY_MONTH = e.target.value || PAY_MONTH; aPay(); };
