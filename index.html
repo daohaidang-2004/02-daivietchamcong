@@ -8,11 +8,12 @@
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#f3f5f9; --card:#fff; --ink:#14213d; --muted:#64708a; --line:#e3e8f0;
-  --pri:#0b5cad; --pri2:#0a4a8c; --pri-soft:#e6f0fb;
+  /* MÀU CHÍNH CỦA APP – đổi theo logo công ty chỉ cần sửa 4 dòng --pri* này */
+  --pri:#0e7c74; --pri2:#0a5f58; --pri-soft:#e1f2ef; --pri-light:#2fb0a4;
+  --bg:#f4f6f6; --card:#fff; --ink:#13201f; --muted:#667574; --line:#e4e9e9;
   --ok:#14915a; --ok-soft:#e5f6ee; --warn:#c77700; --warn-soft:#fff3df;
   --bad:#cf2e2e; --bad-soft:#fdeaea; --grey-soft:#eef1f5;
-  --r:14px; --shadow:0 1px 2px rgba(20,33,61,.06),0 4px 14px rgba(20,33,61,.06);
+  --r:18px; --shadow:0 1px 2px rgba(16,40,38,.04),0 3px 12px rgba(16,40,38,.05);
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 "Be Vietnam Pro",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
@@ -44,15 +45,15 @@ textarea.i{min-height:70px;resize:vertical}
 .chk input{width:18px;height:18px}
 
 /* Layout */
-.top{background:linear-gradient(135deg,#0b5cad,#0a3f78);color:#fff;padding:14px 16px 16px;position:sticky;top:0;z-index:20}
-.top .co{font-size:12px;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.top .who{font-weight:600;font-size:16px}
-.top .btn{white-space:nowrap;flex:none;background:rgba(255,255,255,.15);min-height:34px;padding:6px 12px;font-size:13px}
+.top{background:rgba(244,246,246,.92);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);color:var(--ink);padding:12px 16px;position:sticky;top:0;z-index:20;border-bottom:1px solid var(--line)}
+.top .co{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.top .who{font-weight:700;font-size:16px}
+.top .btn{white-space:nowrap;flex:none;min-height:34px;padding:6px 12px;font-size:13px}
 main{max-width:1100px;margin:0 auto;padding:14px 14px 96px}
 /* Menu trái cho Quản trị trên máy tính */
 #side{display:none}
 .sd-brand{display:flex;align-items:center;gap:10px;padding:16px 16px 10px}
-.sd-brand .lg{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,#0b5cad,#0a3f78);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px}
+.sd-brand .lg{width:34px;height:34px;border-radius:10px;background:var(--pri);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px}
 .sd-grp{font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:#98a2b3;margin:14px 18px 4px}
 .sd-it{display:flex;align-items:center;gap:10px;margin:1px 8px;padding:8px 10px;border-radius:9px;cursor:pointer;color:#475467;font-size:14px;font-weight:500;border:0;background:none;width:calc(100% - 16px);text-align:left}
 .sd-it svg{width:19px;height:19px;flex:none}
@@ -63,7 +64,7 @@ main{max-width:1100px;margin:0 auto;padding:14px 14px 96px}
 .nav .nb{position:absolute;top:2px;left:calc(50% + 6px);background:var(--bad);color:#fff;border-radius:9px;font-size:10px;font-weight:700;padding:0 5px;line-height:16px}
 .nav .nb:empty{display:none}
 .nav button{position:relative}
-.hdmine{display:none;flex:none;background:rgba(255,255,255,.15);color:#fff;border:0;border-radius:20px;padding:0 14px;height:40px;font-weight:600;cursor:pointer;align-items:center;gap:6px}
+.hdmine{display:none;flex:none;background:var(--pri);color:#fff;border:0;border-radius:20px;padding:0 14px;height:40px;font-weight:600;cursor:pointer;align-items:center;gap:6px}
 .hdmine svg{width:18px;height:18px}
 @media (min-width:900px){
   body.has-side #side{display:block;position:fixed;left:0;top:0;bottom:0;width:236px;background:#fff;border-right:1px solid var(--line);overflow:auto;z-index:25;padding-bottom:20px}
@@ -89,20 +90,20 @@ main{max-width:1100px;margin:0 auto;padding:14px 14px 96px}
 .more-it{display:flex;align-items:center;gap:12px;padding:12px 6px;border-bottom:1px solid var(--line);cursor:pointer;font-weight:500}
 .more-it svg{width:21px;height:21px;color:var(--pri)}
 
-.card{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);padding:16px;margin-bottom:14px}
+.card{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);border:1px solid var(--line);padding:16px;margin-bottom:14px}
 .card.flat{box-shadow:none;border:1px solid var(--line)}
 .nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--line);display:flex;z-index:30;padding-bottom:env(safe-area-inset-bottom)}
 .nav button{flex:1;border:0;background:none;padding:8px 2px 9px;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;color:var(--muted);cursor:pointer}
 .nav button svg{width:22px;height:22px}
 .nav button.on{color:var(--pri);font-weight:600}
 .nav button.fab{flex:none;width:76px;padding-top:0;color:var(--pri);font-weight:600}
-.nav button.fab .fb{width:58px;height:58px;border-radius:50%;background:var(--pri);color:#fff;display:flex;align-items:center;justify-content:center;margin-top:-24px;border:4px solid #fff;box-shadow:0 6px 16px rgba(11,92,173,.35)}
+.nav button.fab .fb{width:58px;height:58px;border-radius:50%;background:var(--pri);color:#fff;display:flex;align-items:center;justify-content:center;margin-top:-24px;border:4px solid #fff;box-shadow:0 6px 16px rgba(14,124,116,.35)}
 .nav button.fab .fb svg{width:28px;height:28px}
 .nav button.fab.on .fb{background:var(--pri2)}
-.hdav{flex:none;width:40px;height:40px;border-radius:50%;border:2px solid rgba(255,255,255,.5);background:rgba(255,255,255,.15);color:#fff;font-weight:700;font-size:14px;cursor:pointer}
-.hdbell{flex:none;position:relative;width:40px;height:40px;border-radius:50%;border:0;background:rgba(255,255,255,.15);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.hdav{flex:none;width:42px;height:42px;border-radius:50%;border:1px solid var(--line);background:var(--pri-soft);color:var(--pri);font-weight:700;font-size:14px;cursor:pointer}
+.hdbell{flex:none;position:relative;width:42px;height:42px;border-radius:50%;border:1px solid var(--line);background:#fff;color:var(--ink);cursor:pointer;display:flex;align-items:center;justify-content:center}
 .hdbell svg{width:21px;height:21px}
-.hdbell b{position:absolute;top:-3px;right:-4px;background:#ff3b30;color:#fff;font-size:10.5px;min-width:18px;height:18px;border-radius:9px;padding:0 4px;display:flex;align-items:center;justify-content:center;border:2px solid #0a4a8c}
+.hdbell b{position:absolute;top:-3px;right:-4px;background:#ff3b30;color:#fff;font-size:10.5px;min-width:18px;height:18px;border-radius:9px;padding:0 4px;display:flex;align-items:center;justify-content:center;border:2px solid #fff}
 .tb{border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:10px;cursor:pointer;background:#fff;position:relative}
 .tb.new{border-color:#9cc3ec;background:#f5f9ff}
 .tb.new::before{content:"";position:absolute;left:-1px;top:14px;width:4px;height:22px;border-radius:0 3px 3px 0;background:var(--pri)}
@@ -113,7 +114,7 @@ main{max-width:1100px;margin:0 auto;padding:14px 14px 96px}
 .role-card{border:1px solid var(--line);border-radius:12px;padding:12px 14px}
 .role-card h3{display:flex;align-items:center;gap:8px}
 /* Bảng công dạng lịch (nhân viên) */
-.bc-hero{background:linear-gradient(135deg,#0b5cad,#0a3f78);color:#fff;border-radius:18px;padding:14px 16px;margin-bottom:14px;box-shadow:var(--shadow)}
+.bc-hero{background:var(--pri);color:#fff;border-radius:20px;padding:14px 16px;margin-bottom:14px;box-shadow:var(--shadow)}
 .bc-mon{display:inline-flex;align-items:center;gap:4px;background:rgba(255,255,255,.15);border-radius:10px;padding:2px}
 .bc-mon button{border:0;background:none;color:#fff;font:inherit;font-size:18px;width:32px;height:32px;cursor:pointer;border-radius:8px}
 .bc-mon b{font-size:15px;padding:0 4px}
@@ -169,14 +170,14 @@ table.g .tt{font-weight:700;background:#fafbfd;min-width:40px}
 .chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:12px;scrollbar-width:none}
 .chips::-webkit-scrollbar{display:none}
 .chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 14px;white-space:nowrap;cursor:pointer;font-size:13.5px;font-weight:500}
-.chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.chip.on{background:var(--pri);color:#fff;border-color:var(--pri)}
 .chip .cnt{display:inline-block;background:var(--bad);color:#fff;border-radius:999px;font-size:11px;padding:0 6px;margin-left:4px}
 
 /* Check-in */
 .clock{font-size:52px;font-weight:700;letter-spacing:-1px;text-align:center;margin-top:4px}
 .date{text-align:center;color:var(--muted)}
 .ci-btn{width:190px;height:190px;border-radius:50%;border:0;margin:22px auto 8px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:19px;cursor:pointer;
-  background:radial-gradient(circle at 30% 25%,#2f86dc,#0b5cad 60%,#083f78);box-shadow:0 12px 30px rgba(11,92,173,.35),inset 0 -6px 0 rgba(0,0,0,.12);transition:transform .1s}
+  background:radial-gradient(circle at 30% 25%,var(--pri-light),var(--pri) 60%,var(--pri2));box-shadow:0 12px 30px rgba(14,124,116,.32),inset 0 -6px 0 rgba(0,0,0,.12);transition:transform .1s}
 .ci-btn:active{transform:scale(.97)}
 .ci-btn.out{background:radial-gradient(circle at 30% 25%,#f0a23a,#d9730d 60%,#a65304);box-shadow:0 12px 30px rgba(217,115,13,.35),inset 0 -6px 0 rgba(0,0,0,.12)}
 .ci-btn.done{background:radial-gradient(circle at 30% 25%,#3cc489,#14915a 60%,#0c6b41);box-shadow:0 12px 30px rgba(20,145,90,.3)}
@@ -191,7 +192,7 @@ table.g .tt{font-weight:700;background:#fafbfd;min-width:40px}
 /* Stats */
 .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
 @media (max-width:640px){.stats{grid-template-columns:repeat(2,1fr)}}
-.stat{background:#fff;border-radius:12px;padding:12px 14px;box-shadow:var(--shadow)}
+.stat{background:#fff;border-radius:16px;padding:12px 14px;box-shadow:var(--shadow);border:1px solid var(--line)}
 .stat b{display:block;font-size:24px;line-height:1.2}
 .stat span{font-size:12.5px;color:var(--muted)}
 
@@ -236,28 +237,63 @@ table.t input.i{min-height:34px;padding:6px 8px;font-size:13px;min-width:110px}
 #toast{pointer-events:none;position:fixed;left:50%;bottom:86px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:11px 16px;border-radius:12px;z-index:80;max-width:92vw;font-size:14px;box-shadow:0 8px 24px rgba(0,0,0,.2);transition:opacity .2s}
 #toast.err{background:var(--bad)} #toast.ok{background:var(--ok)}
 #loading{position:fixed;top:0;left:0;right:0;height:3px;z-index:90;overflow:hidden}
-#loading::before{content:"";position:absolute;height:100%;width:40%;background:#58a6ff;animation:ld 1s infinite ease-in-out}
+#loading::before{content:"";position:absolute;height:100%;width:40%;background:var(--pri-light);animation:ld 1s infinite ease-in-out}
 @keyframes ld{0%{left:-40%}100%{left:100%}}
 
 /* Login */
-.login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:linear-gradient(160deg,#0b5cad 0%,#0a3f78 55%,#f3f5f9 55.1%)}
+.login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:linear-gradient(160deg,var(--pri) 0%,var(--pri2) 55%,var(--bg) 55.1%)}
 .login .card{width:100%;max-width:380px;padding:26px 22px}
 .logo{width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,#ffb020,#ff7a00);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;box-shadow:0 6px 16px rgba(255,122,0,.35)}
 .logo svg{width:32px;height:32px;color:#fff}
 
+/* Trang chủ nhân viên */
+.hm-top{display:flex;align-items:flex-start;gap:10px;margin:4px 0 14px}
+.hm-top .av{width:44px;height:44px;font-size:15px}
+.hm-date{display:flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:6px 10px;font-size:12.5px;line-height:1.25}
+.hm-h{font-size:26px;line-height:1.2;font-weight:700;margin:2px 0;letter-spacing:-.3px}
+.hm-tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:12px}
+.hm-tiles>div{background:#fff;border:1px solid var(--line);border-radius:16px;padding:11px 12px;box-shadow:var(--shadow)}
+.hm-tiles span{font-size:12.5px;color:var(--muted);display:block}
+.hm-tiles b{font-size:20px;display:block;margin-top:4px;letter-spacing:-.3px;white-space:nowrap}
+.hm-tiles .hl{background:var(--pri);border-color:var(--pri);color:#fff}
+.hm-tiles .hl span{color:rgba(255,255,255,.85)}
+.hm-row{display:flex;align-items:center;justify-content:space-between;cursor:pointer}
+.hm-mini{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:10px}
+.hm-mini div{background:var(--grey-soft);border-radius:12px;padding:8px 6px;text-align:center}
+.hm-mini b{display:block;font-size:17px}
+.hm-mini span{font-size:11.5px;color:var(--muted)}
+.hm-bar{display:flex;gap:4px;margin-top:10px}
+.hm-bar i{flex:1;height:22px;border-radius:5px;background:var(--grey-soft)}
+.hm-bar i.ok{background:var(--pri)} .hm-bar i.wa{background:#7fc9c1} .hm-bar i.er{background:var(--bad)} .hm-bar i.pp{background:#bfe3de}
+.rq-card{border:1px solid var(--line);border-radius:16px;padding:12px 14px;margin-bottom:10px;background:#fff}
+.rq-card .rq-h{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.rq-card .rq-g{display:grid;grid-template-columns:1.25fr 1fr;gap:8px;margin-top:10px}
+.rq-card .rq-g>div{display:flex;gap:8px;align-items:center;min-width:0}
+.rq-ic{width:34px;height:34px;border-radius:10px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--pri);flex:none}
+.rq-ic svg{width:17px;height:17px}
+.rq-card .lb{font-size:11.5px;color:var(--muted)}
+.rq-card .vl{font-size:13.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
 /* Camera quét mặt: toàn màn hình */
-.cam{position:fixed;inset:0;background:#000;z-index:70;color:#fff;overflow:hidden}
-.cam video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;transform:scaleX(-1);background:#000}
-.cam .oval{position:absolute;left:50%;top:50%;width:min(58vw,260px);height:min(78vw,350px);transform:translate(-50%,-50%);border:5px solid rgba(255,255,255,.9);border-radius:50%;transition:border-color .2s;pointer-events:none}
-.cam .oval.ok{border-color:#3cc489} .cam .oval.bad{border-color:#ffb020}
-.cam .ctop{position:absolute;top:calc(env(safe-area-inset-top) + 18px);left:0;right:0;text-align:center;padding:0 16px;text-shadow:0 1px 3px rgba(0,0,0,.5)}
-.cam .ctop h3{font-size:17px;margin:0 0 4px}
-.cam .stepTxt{font-size:13px;font-weight:700;letter-spacing:1px;opacity:.9;margin:6px 0}
-.cam .msg{display:inline-block;background:#1f47d6;padding:10px 20px;border-radius:16px;font-size:20px;font-weight:700;max-width:92vw;text-shadow:none}
-.cam .msg.ok{background:#14915a} .cam .msg.bad{background:#c77700}
-.cam .sub{font-size:13px;opacity:.85;margin-top:8px}
-.cam .bottom{position:absolute;left:20px;right:20px;bottom:calc(env(safe-area-inset-bottom) + 24px)}
-.cam .bottom .btn{width:100%;background:rgba(0,0,0,.35);border:2px solid rgba(255,255,255,.85);border-radius:16px;min-height:52px;font-size:17px}
+.cam{position:fixed;inset:0;background:#fff;z-index:70;color:var(--ink);overflow:auto;display:flex;flex-direction:column;align-items:center;padding:calc(env(safe-area-inset-top) + 14px) 18px calc(env(safe-area-inset-bottom) + 16px);text-align:center}
+.cam .ctop h3{font-size:17px;margin:0}
+.cam .steps{display:flex;gap:6px;justify-content:center;margin:10px 0 6px}
+.cam .steps i{width:34px;height:6px;border-radius:3px;background:#e4e9e9}
+.cam .steps i.on{background:var(--pri)}
+.cam .stepTxt{font-size:12px;font-weight:700;letter-spacing:.6px;color:var(--muted)}
+.cam .msg{font-size:21px;font-weight:700;margin:6px 0 2px;min-height:30px;color:var(--ink)}
+.cam .msg.ok{color:var(--ok)} .cam .msg.bad{color:#d07b00}
+.cam .vwrap{position:relative;width:min(70vw,290px);aspect-ratio:3/4;border-radius:50%;overflow:hidden;margin:12px auto 8px;background:#111;flex:none}
+.cam video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
+.cam .oval{position:absolute;inset:0;border-radius:50%;border:7px solid #d7dede;transition:border-color .2s;pointer-events:none}
+.cam .oval.ok{border-color:var(--ok)} .cam .oval.bad{border-color:#f0a400}
+.cam .arrow{font-size:30px;color:var(--pri);height:34px;animation:sway 1.2s ease-in-out infinite}
+@keyframes sway{0%,100%{transform:translateX(-14px)}50%{transform:translateX(14px)}}
+.cam .sub{font-size:13.5px;color:var(--muted);max-width:330px;margin:2px auto 0}
+.cam .cinfo{margin-top:auto;width:100%;max-width:420px;border:1px solid var(--line);border-radius:18px;padding:12px 14px;text-align:left;display:flex;gap:10px;align-items:center;background:#fff;box-shadow:var(--shadow)}
+.cam .cinfo .av{width:40px;height:40px}
+.cam .bottom{width:100%;max-width:420px;margin-top:10px}
+.cam .bottom .btn{width:100%;border-radius:14px;min-height:48px}
 .faces{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px}
 .faces .card{margin:0;padding:12px}
 .ph{width:100%;aspect-ratio:3/4;background:#e9edf3;border-radius:10px;object-fit:cover;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px;overflow:hidden}
@@ -274,7 +310,7 @@ table.t input.i{min-height:34px;padding:6px 8px;font-size:13px;min-width:110px}
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#0a7">
+<meta name="theme-color" content="#0e7c74">
 <script>window.API_URL="https://script.google.com/macros/s/AKfycbwTOLbadnnYZcG4N1Affk0jBYyMfmZ6UqxZ-3p0pu52zO5B8JgXlzYN5ALQR0_8nSgB6w/exec";</script>
 </head>
 <body>
@@ -655,7 +691,7 @@ function loadFaceApi() {
 }
 
 async function detectFace(video) {
-  const r = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.5 }))
+  const r = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 256, scoreThreshold: 0.4 }))
     .withFaceLandmarks().withFaceDescriptor();
   if (!r) return null;
   const pts = r.landmarks.positions;
@@ -679,14 +715,23 @@ function faceScan(opts) {
   return new Promise((resolve, reject) => {
     const el = document.createElement('div');
     el.className = 'cam';
-    el.innerHTML = '<video playsinline muted autoplay></video><div class="oval"></div>' +
-      '<div class="ctop"><h3>' + esc(opts.title || 'Quét khuôn mặt') + '</h3><div class="stepTxt">BƯỚC 1/3</div>' +
-      '<div class="msg">Đang mở camera…</div><div class="sub">Giữ điện thoại ngang tầm mắt · đủ sáng · bỏ nón, khẩu trang</div></div>' +
-      '<div class="bottom"><button class="btn">Hủy</button></div>';
+    // Nền trắng: màn hình sáng chiếu vào mặt như đèn, quét được cả chỗ tối
+    el.innerHTML = '<div class="ctop"><h3>' + esc(opts.title || 'Quét khuôn mặt') + '</h3><div class="steps"><i class="on"></i><i></i><i></i></div><div class="stepTxt">BƯỚC 1/3 · NHÌN THẲNG</div></div>' +
+      '<div class="vwrap"><video playsinline muted autoplay></video><div class="oval"></div></div>' +
+      '<div class="msg">Đang mở camera…</div><div class="arrow" style="visibility:hidden">⟷</div>' +
+      '<div class="sub">Đưa mặt vào giữa vòng tròn · bỏ nón, khẩu trang, kính râm</div>' +
+      '<div class="cinfo"><div class="av">' + esc(initials(ME ? ME.HoTen : '')) + '</div><div class="grow"><b>' + esc(ME ? ME.HoTen : '') + '</b><div class="tiny muted">' + esc(ME ? ME.MaNV : '') + ' · ' + new Date().toTimeString().slice(0, 5) + '</div></div></div>' +
+      '<div class="bottom"><button class="btn light">Hủy</button></div>';
     document.body.appendChild(el);
     $('#toast').classList.add('hidden');
-    const video = $('video', el), oval = $('.oval', el), msg = $('.msg', el), stepTxt = $('.stepTxt', el);
-    const setStep = n => { stepTxt.textContent = 'BƯỚC ' + n + '/3'; };
+    const video = $('video', el), oval = $('.oval', el), msg = $('.msg', el), stepTxt = $('.stepTxt', el), arrow = $('.arrow', el), sub = $('.sub', el);
+    const setStep = n => {
+      stepTxt.textContent = 'BƯỚC ' + n + '/3 · ' + ['NHÌN THẲNG', 'QUAY ĐẦU', 'NHÌN THẲNG LẠI'][n - 1];
+      $$('.steps i', el).forEach((x, i) => x.classList.toggle('on', i < n));
+      arrow.style.visibility = n === 2 ? 'visible' : 'hidden';
+      if (n > 1 && navigator.vibrate) navigator.vibrate(40);
+    };
+    let lastSeen = Date.now();
     let stream = null, done = false;
     const say = (t, cls) => { msg.textContent = t; msg.className = 'msg ' + (cls || ''); oval.className = 'oval ' + (cls || ''); };
     const finish = (err, val) => {
@@ -714,9 +759,13 @@ function faceScan(opts) {
         await modelP;
         if (done) return;
         const t0 = Date.now();
-        const timeout = () => { if (Date.now() - t0 > 45000) throw new Error('Hết thời gian quét. Hãy thử lại ở nơi đủ sáng.'); };
-        const MIN_SIZE = 0.12;
-        const hint = f => !f ? 'Đưa khuôn mặt vào khung' : f.size < MIN_SIZE ? 'Đưa điện thoại lại gần hơn' : 'Nhìn thẳng vào camera';
+        const timeout = () => { if (Date.now() - t0 > 60000) throw new Error('Hết thời gian quét. Hãy thử lại ở nơi đủ sáng.'); };
+        const MIN_SIZE = 0.09;
+        const hint = f => {
+          if (f) lastSeen = Date.now();
+          sub.textContent = !f && Date.now() - lastSeen > 3000 ? 'Không thấy mặt: quay mặt về phía có ánh sáng, đưa điện thoại ngang tầm mắt' : 'Đưa mặt vào giữa vòng tròn · bỏ nón, khẩu trang, kính râm';
+          return !f ? 'Đưa khuôn mặt vào vòng tròn' : f.size < MIN_SIZE ? 'Đưa điện thoại lại gần hơn' : 'Nhìn thẳng vào camera';
+        };
 
         // Bước 1: nhìn thẳng (nới dần điều kiện nếu quá 4 giây để không ai bị kẹt)
         setStep(1);
@@ -725,7 +774,7 @@ function faceScan(opts) {
         while (!done && !d1) {
           timeout();
           const f = await detectFace(video);
-          const tol = Date.now() - s1 > 4000 ? 0.22 : 0.14;
+          const tol = Date.now() - s1 > 3000 ? 0.26 : 0.18;
           if (f && f.size >= MIN_SIZE && Math.abs(f.yaw - 0.5) < tol) {
             ok++; say('Giữ yên…', 'ok');
             if (ok >= 2) { d1 = f.desc; base = f.yaw; }
@@ -738,12 +787,12 @@ function faceScan(opts) {
         setStep(2);
         const t1 = Date.now();
         let turned = false;
-        say('Từ từ quay đầu sang trái hoặc phải');
+        say('Từ từ quay đầu sang một bên');
         while (!done && !turned) {
           timeout();
-          if (Date.now() - t1 > 15000) throw new Error('Không thấy bạn quay đầu. Hãy thử lại và quay đầu rõ hơn.');
+          if (Date.now() - t1 > 20000) throw new Error('Không thấy bạn quay đầu. Hãy thử lại và quay đầu rõ hơn.');
           const f = await detectFace(video);
-          if (f && Math.abs(f.yaw - base) > 0.15) turned = true;
+          if (f && Math.abs(f.yaw - base) > 0.11) turned = true;
           await sleep(40);
         }
         if (done) return;
@@ -757,7 +806,7 @@ function faceScan(opts) {
         while (!done && descs.length < (opts.register ? 3 : 2)) {
           timeout();
           const f = await detectFace(video);
-          const tol = Date.now() - s3 > 4000 ? 0.12 : 0.07;
+          const tol = Date.now() - s3 > 3000 ? 0.16 : 0.10;
           if (f && f.size >= MIN_SIZE && Math.abs(f.yaw - base) < tol) {
             ok++; say('Nhìn thẳng… giữ yên', 'ok');
             if (ok >= 2) {
@@ -818,20 +867,59 @@ function stopClock() { if (clockTimer) clearInterval(clockTimer); clockTimer = n
 async function vCheckin() {
   stopClock();
   const main = $('#main');
-  main.innerHTML = '<div class="card"><div class="clock num" id="clk">--:--</div><div class="date" id="dte"></div>' +
-    '<div id="ciBox"><div class="empty">Đang tải…</div></div></div>' +
-    '<div class="card flat small muted" id="ciHelp"></div>';
+  const h = new Date().getHours();
+  const loiChao = h < 11 ? 'Chào buổi sáng' : h < 14 ? 'Chào buổi trưa' : h < 18 ? 'Chào buổi chiều' : 'Chào buổi tối';
+  const ten = String(ME.HoTen || '').trim().split(/\s+/).pop();
+  main.innerHTML = '<div class="hm-top"><div class="hm-h grow">' + loiChao + ',<br>' + esc(ten) + '</div>' +
+      '<div class="hm-date">' + IC.list.replace('<svg', '<svg width="16" height="16"') + '<span id="dte"></span></div></div>' +
+    '<div id="ciBox"><div class="empty">Đang tải…</div></div>' +
+    '<div class="card" id="hmMonth"><div class="hm-row"><h3>Tháng này</h3><span class="small muted">Bảng công →</span></div><div class="small muted mt">Đang tải…</div></div>' +
+    '<div class="card" id="hmPay" style="cursor:pointer"><div class="hm-row"><h3>Phiếu lương</h3><span class="small muted">Xem →</span></div><div class="small muted mt">Đang tải…</div></div>' +
+    '<div class="card flat small muted" id="ciHelp"></div><div class="clock num hidden" id="clk"></div>';
+  $('#hmMonth').onclick = () => go('history');
+  $('#hmPay').onclick = () => go('payslip');
+  call('myAttendance', { Thang: thisMonth() }).then(homeMonth).catch(() => {});
+  call('myPayslips').then(homePay).catch(() => {});
   const tick = () => {
     const d = new Date();
     const c = $('#clk'); if (!c) return stopClock();
     c.textContent = pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
-    $('#dte').textContent = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ năm', 'Thứ sáu', 'Thứ bảy'][d.getDay()] + ', ' + pad(d.getDate()) + '/' + pad(d.getMonth() + 1) + '/' + d.getFullYear();
+    $('#dte').innerHTML = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ năm', 'Thứ sáu', 'Thứ bảy'][d.getDay()] + '<br><b>' + pad(d.getDate()) + '/' + pad(d.getMonth() + 1) + '</b> · ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+    if (TODAY && TODAY.Ban && TODAY.Ban.GioVao && !TODAY.Ban.GioRa && $('#hmLam')) $('#hmLam').textContent = gioLam(TODAY.Ban.GioVao);
   };
   tick(); clockTimer = setInterval(tick, 1000);
   try { renderCheckin(await call('today')); } catch (e) { fail(e); $('#ciBox').innerHTML = '<div class="empty">' + esc(e.message) + '</div>'; }
 }
 
 let TODAY = null;
+/** Số giờ đã làm từ giờ vào đến bây giờ (hiện ở thẻ "Giờ làm") */
+function gioLam(vao) {
+  const p = String(vao).split(':').map(Number), d = new Date();
+  let m = d.getHours() * 60 + d.getMinutes() - (p[0] * 60 + p[1]);
+  if (m < 0) m = 0;
+  return Math.floor(m / 60) + 'h ' + pad(m % 60) + 'm';
+}
+function homeMonth(r) {
+  const box = $('#hmMonth'); if (!box) return;
+  const L = r.Lich || {}, days = Object.keys(L).sort(), today = r.HomNay || todayStr();
+  let phep = 0, le = 0, tc = 0;
+  days.forEach(d => { const o = L[d]; if (o.nghi === 'PHEP' && o.nghiSt === 'DUYET' && o.vao === undefined) phep += o.nua ? 0.5 : 1; if (o.ma === 'L') le += o.dv; if (o.ot && o.otSt === 'DUYET') tc += o.ot; });
+  const loi = days.filter(d => L[d].loi && L[d].gt !== 'CHO' && L[d].gt !== 'DUYET').length;
+  const tong = n(r.TongHop.Cong) + phep + le;
+  const cls = o => o.loi ? 'er' : o.vao !== undefined ? (o.muon || o.thieu ? 'wa' : 'ok') : (o.nghi || o.le ? 'pp' : '');
+  const past = days.filter(d => d <= today && L[d].dv > 0).slice(-14);
+  box.innerHTML = '<div class="hm-row"><h3>Tháng ' + vnDate(r.Thang) + '</h3><span class="small" style="color:var(--pri);font-weight:600">Bảng công →</span></div>' +
+    '<div class="hm-mini"><div><b>' + fmtNum(tong) + '<small class="muted" style="font-size:11px">/' + fmtNum(r.CongChuan) + '</small></b><span>Công</span></div><div><b>' + fmtNum(tc) + 'h</b><span>Tăng ca</span></div>' +
+    '<div><b>' + fmtNum(r.Phep.ConLai) + '</b><span>Phép còn</span></div><div' + (loi ? ' style="background:var(--bad-soft)"' : '') + '><b' + (loi ? ' style="color:var(--bad)"' : '') + '>' + loi + '</b><span>Cần xử lý</span></div></div>' +
+    (past.length ? '<div class="hm-bar" title="14 ngày làm việc gần nhất">' + past.map(d => '<i class="' + cls(L[d]) + '"></i>').join('') + '</div><div class="tiny muted" style="margin-top:4px">14 ngày làm việc gần nhất</div>' : '');
+}
+function homePay(r) {
+  const box = $('#hmPay'); if (!box) return;
+  const x = (r.Rows || [])[0];
+  box.innerHTML = '<div class="hm-row"><h3>Phiếu lương</h3><span class="small" style="color:var(--pri);font-weight:600">Xem →</span></div>' +
+    (x ? '<div class="row between mt" style="align-items:flex-end"><div><div class="small muted">Thực nhận tháng ' + vnDate(x.Thang) + '</div><div style="font-size:26px;font-weight:700;letter-spacing:-.4px">' + money(x.ThucNhanTruocUng != null ? x.ThucNhanTruocUng : x.ThucLinh) + ' đ</div></div>' +
+      '<span class="badge ' + (x.DaThanhToan === 'CO' ? 'b-ok">Đã chuyển khoản' : 'b-warn">Chưa chuyển') + '</span></div>' : '<div class="small muted mt">Chưa có phiếu lương nào được công bố.</div>');
+}
 function renderCheckin(t) {
   TODAY = t;
   const b = t.Ban;
@@ -842,18 +930,18 @@ function renderCheckin(t) {
   const hint = state === 'in' ? 'Giờ vào: ' + t.GioVaoChuan : state === 'out' ? 'Giờ ra: ' + t.GioRaChuan : 'Bấm để cập nhật giờ ra';
   const late = b && n(b.PhutMuon) > 0 ? ' <span class="badge b-warn">muộn ' + b.PhutMuon + "'</span>" : '';
   $('#ciBox').innerHTML =
-    '<div class="center small muted" style="margin-top:4px">Lịch: ' + esc(t.Lich) + (t.CongHomNay === 0.5 ? ' · hôm nay làm nửa ngày' : '') + '</div>' +
+    '<div class="hm-tiles"><div><span>Giờ vào</span><b class="num">' + (b && b.GioVao ? esc(b.GioVao) : '--:--') + '</b>' + (late ? '<div style="margin-top:3px">' + late + '</div>' : '') + '</div>' +
+      '<div><span>Giờ ra</span><b class="num">' + (b && b.GioRa ? esc(b.GioRa) : '--:--') + '</b></div>' +
+      '<div class="hl"><span>Giờ làm</span><b class="num" id="hmLam">' + (b && b.GioRa ? fmtNum(b.SoGio) + 'h' : b && b.GioVao ? gioLam(b.GioVao) : '0h') + '</b></div></div>' +
+    '<div class="card" style="padding-bottom:10px"><div class="center small muted" style="margin-top:2px">Lịch: ' + esc(t.Lich) + ' · ' + esc(t.GioVaoChuan) + '–' + esc(t.GioRaChuan) + (t.CongHomNay === 0.5 ? ' · hôm nay làm nửa ngày' : '') + '</div>' +
     (ME.ThieuSTK ? '<div class="gps bad mt" style="cursor:pointer" id="goPf"><b>Bạn chưa có số tài khoản nhận lương →</b>&nbsp;bấm để bổ sung</div>' : '') +
     (t.CongHomNay === 0 && !t.NgayLe ? '<div class="gps mt">Hôm nay là ngày nghỉ theo lịch. Đi làm phải được chỉ huy trưởng đăng ký tăng ca mới có công.</div>' : '') +
     (t.NgayLe ? '<div class="gps mt"><b>Hôm nay là ngày lễ:</b>&nbsp;' + esc(t.NgayLe) + '. Đi làm phải được chỉ huy trưởng đăng ký tăng ca (mỗi giờ × 3).</div>' : '') +
     faceInfoHtml(t.KhuonMat) +
     '<button class="ci-btn ' + (state === 'out' ? 'out' : state === 'done' ? 'done' : '') + '" id="ciBtn">' +
       (state === 'done' ? IC.check : IC.finger) + label + '<small>' + esc(hint) + '</small></button>' +
-    '<div class="ci-times"><div><span class="small muted">Giờ vào</span><b class="num">' + (b && b.GioVao ? esc(b.GioVao) : '--:--') + late + '</b>' +
-      '<span class="tiny muted">' + esc(b ? b.ChiNhanhVao : '') + '</span></div>' +
-    '<div><span class="small muted">Giờ ra</span><b class="num">' + (b && b.GioRa ? esc(b.GioRa) : '--:--') + '</b>' +
-      '<span class="tiny muted">' + (b && b.GioRa ? esc(fmtNum(b.SoGio)) + ' giờ · ' + esc(fmtNum(b.Cong)) + ' công' : '') + '</span></div></div>' +
-    '<div class="gps" id="gpsBox">' + IC.pin + '<span>' + (t.KhuonMat && t.KhuonMat.BatBuoc ? 'Khi bấm nút: quét khuôn mặt và kiểm tra vị trí' : 'Vị trí sẽ được kiểm tra khi bấm nút') + (t.BatBuocGPS ? ' (phải ở trong khu vực làm việc)' : '') + '</span></div>';
+    (b && b.ChiNhanhVao ? '<div class="center tiny muted">' + IC.pin.replace('width="16" height="16"', 'width="13" height="13"') + ' ' + esc(b.ChiNhanhVao) + (b.GioRa ? ' · ' + esc(fmtNum(b.Cong)) + ' công' : '') + '</div>' : '') +
+    '<div class="gps" id="gpsBox">' + IC.pin + '<span>' + (t.KhuonMat && t.KhuonMat.BatBuoc ? 'Khi bấm nút: quét khuôn mặt và kiểm tra vị trí' : 'Vị trí sẽ được kiểm tra khi bấm nút') + (t.BatBuocGPS ? ' (phải ở trong khu vực làm việc)' : '') + '</span></div></div>';
   const rb = $('[data-regface]');
   if (rb) rb.onclick = () => registerFaceFlow(() => vCheckin());
   if ($('#goPf')) $('#goPf').onclick = () => go('account');
@@ -1061,13 +1149,16 @@ async function vRequests() {
   $('#newReq').onclick = reqForm;
   try {
     const rows = await call('myRequests');
-    $('#rqList').innerHTML = rows.length ? '<div class="list">' + rows.map(d =>
-      '<div class="it"><div class="grow"><b>' + esc(LOAI_DON[d.Loai]) + '</b><div class="small">' + esc(donDesc(d)) + '</div>' +
-      (d.LyDo ? '<div class="tiny muted">Lý do: ' + esc(d.LyDo) + '</div>' : '') +
-      (d.GhiChuDuyet ? '<div class="tiny muted">Quản lý: ' + esc(d.GhiChuDuyet) + '</div>' : '') + '</div>' +
-      '<div class="right"><span class="badge ' + TT_DON[d.TrangThai][1] + '">' + TT_DON[d.TrangThai][0] + '</span>' +
-      (d.TrangThai === 'CHO' ? '<div style="margin-top:6px"><button class="btn light sm" data-cancel="' + esc(d.ID) + '">Hủy</button></div>' : '') + '</div></div>'
-    ).join('') + '</div>' : '<div class="empty">Bạn chưa có đơn nào</div>';
+    const ICU = IC.user.replace('<svg', '<svg width="17" height="17"'), ICL = IC.list.replace('<svg', '<svg width="17" height="17"');
+    $('#rqList').classList.remove('card');
+    $('#rqList').innerHTML = rows.length ? rows.map(d =>
+      '<div class="rq-card"><div class="rq-h"><b style="font-size:15px">' + esc(LOAI_DON[d.Loai]) + '</b><span class="badge ' + TT_DON[d.TrangThai][1] + '">' + TT_DON[d.TrangThai][0] + '</span></div>' +
+      '<div class="rq-g"><div><div class="rq-ic">' + ICL + '</div><div style="min-width:0"><div class="lb">Thời gian</div><div class="vl" title="' + esc(donDesc(d)) + '">' + esc(donDesc(d)) + '</div></div></div>' +
+        '<div><div class="rq-ic">' + ICU + '</div><div style="min-width:0"><div class="lb">' + (d.TrangThai === 'CHO' ? 'Gửi lúc' : 'Người duyệt') + '</div><div class="vl">' + esc(d.TrangThai === 'CHO' ? (d.NgayTao || '') : String(d.NguoiDuyet || '').split(' ')[0]) + '</div></div></div></div>' +
+      (d.LyDo ? '<div class="tiny muted mt">Lý do: ' + esc(d.LyDo) + '</div>' : '') +
+      (d.GhiChuDuyet ? '<div class="tiny muted">Quản lý ghi: ' + esc(d.GhiChuDuyet) + '</div>' : '') +
+      (d.TrangThai === 'CHO' ? '<div class="right mt"><button class="btn light sm" data-cancel="' + esc(d.ID) + '">Hủy đơn</button></div>' : '') + '</div>'
+    ).join('') : '<div class="card empty">Bạn chưa có đơn nào</div>';
     $$('[data-cancel]').forEach(b => b.onclick = async () => {
       if (!(await confirmBox('Hủy đơn này?', 'Hủy đơn'))) return;
       try { await call('cancelRequest', { ID: b.dataset.cancel }); toast('Đã hủy đơn', 'ok'); vRequests(); } catch (e) { fail(e); }
@@ -2083,21 +2174,38 @@ async function aPay() {
 
 /** Sổ nợ 1 người: vẽ vào ô #noBox trong root (hồ sơ nhân viên hoặc trang Sổ nợ) */
 function debtPanel(m, maNV, after) {
+  const fmtIn = el => { el.oninput = () => { const v = el.value.replace(/\D/g, ''); el.value = v ? Number(v).toLocaleString('vi-VN') : ''; }; };
+  const LO = { VAY: ['Vay', 'b-bad'], TRU: ['Trừ lương', 'b-pri'], TRA: ['Trả ngoài', 'b-ok'] };
   const drawNo = d => {
     const box = $('#noBox', m); if (!box) return;
     box.className = '';
-    box.innerHTML = '<div class="row between"><span>Còn nợ: <b style="font-size:16px">' + money(d.ConNo) + 'đ</b></span><button type="button" class="btn ghost sm" id="noAdd">+ Thêm khoản vay</button></div>' +
-      (d.Rows.length ? '<div class="tbl-wrap mt"><table class="t"><thead><tr><th>Ngày</th><th>Nội dung</th><th class="right">Vay</th><th class="right">Đã trừ</th><th class="right">Còn lại</th><th></th></tr></thead><tbody>' +
-        d.Rows.map(x => '<tr><td class="nowrap">' + vnDate(x.Ngay) + '</td><td class="tiny">' + esc(x.GhiChu) + '</td><td class="right num">' + (x.Loai === 'VAY' ? money(x.SoTien) : '') + '</td><td class="right num">' + (x.Loai === 'TRU' ? money(x.SoTien) : '') + '</td><td class="right num">' + money(x.ConLai) + '</td><td>' + (x.Loai === 'VAY' ? '<span class="lnk" data-delno="' + esc(x.ID) + '">xóa</span>' : '') + '</td></tr>').join('') + '</tbody></table></div>' : '<div class="small muted mt">Chưa có khoản nợ nào.</div>') +
-      '<div class="small muted mt">Số trừ mỗi tháng nhập ở trang Tính lương → Bước 1. Số nợ chỉ giảm khi bảng lương được công bố.</div>';
-    $('#noAdd', m).onclick = () => {
-      if ($('#noForm', m)) return;
-      $('#noBox', m).insertAdjacentHTML('beforeend', '<div class="card flat mt" id="noForm"><div class="grid3"><div><label class="f">Số tiền vay (đ)</label><input class="i" id="noTien" inputmode="numeric"></div><div><label class="f">Ngày</label><input class="i" type="date" id="noNgay" value="' + todayStr() + '"></div><div><label class="f">Ghi chú</label><input class="i" id="noGhi" value="Nợ vay công ty"></div></div><button type="button" class="btn sm mt" id="noOk">Lưu khoản vay</button></div>');
-      $('#noTien', m).oninput = ev => { const v = ev.target.value.replace(/\D/g, ''); ev.target.value = v ? Number(v).toLocaleString('vi-VN') : ''; };
-      $('#noOk', m).onclick = async () => {
-        try { drawNo(await call('addDebt', { MaNV: maNV, SoTien: $('#noTien', m).value.replace(/\D/g, ''), Ngay: $('#noNgay', m).value, GhiChu: $('#noGhi', m).value })); toast('Đã thêm khoản vay', 'ok'); after && after(); } catch (er) { fail(er); }
-      };
+    box.innerHTML = '<div class="row between wrap"><span>Còn nợ: <b style="font-size:18px;color:' + (d.ConNo ? 'var(--bad)' : 'var(--ok)') + '">' + money(d.ConNo) + 'đ</b></span>' +
+      '<div class="row" style="gap:6px"><button type="button" class="btn ghost sm" id="noAdd">+ Thêm khoản vay</button>' + (d.ConNo > 0 ? '<button type="button" class="btn ok sm" id="noPay">Ghi trả nợ</button>' : '') + '</div></div>' +
+      '<div id="noForm"></div>' +
+      (d.Rows.length ? '<div class="tbl-wrap mt"><table class="t"><thead><tr><th>Ngày</th><th>Loại</th><th>Nội dung</th><th class="right">Số tiền</th><th class="right">Còn lại</th><th></th></tr></thead><tbody>' +
+        d.Rows.map(x => '<tr><td class="nowrap">' + vnDate(x.Ngay) + '</td><td><span class="badge ' + (LO[x.Loai] || ['', 'b-grey'])[1] + '">' + (LO[x.Loai] || [x.Loai])[0] + '</span></td><td class="tiny">' + esc(x.GhiChu) + '</td>' +
+          '<td class="right num">' + (x.Loai === 'VAY' ? '+' : '−') + money(x.SoTien) + '</td><td class="right num"><b>' + money(x.ConLai) + '</b></td><td class="nowrap">' +
+          (x.Loai === 'VAY' ? '<span class="lnk" data-edno="' + esc(x.ID) + '">sửa</span> · ' : '') + (x.Loai !== 'TRU' ? '<span class="lnk" data-delno="' + esc(x.ID) + '">xóa</span>' : '') + '</td></tr>').join('') + '</tbody></table></div>' : '<div class="small muted mt">Chưa có khoản nợ nào.</div>') +
+      '<div class="small muted mt">Trừ lương: nhập ở Tính lương → Bước 1, số nợ giảm khi công bố bảng lương. Trả ngoài (tiền mặt / chuyển khoản): bấm "Ghi trả nợ", số nợ giảm ngay.</div>';
+    const form = (html, onOk) => {
+      $('#noForm', m).innerHTML = '<div class="card flat mt">' + html + '<div class="row mt"><button type="button" class="btn sm" id="noOk">Lưu</button><button type="button" class="btn light sm" id="noX">Hủy</button></div></div>';
+      $$('#noForm [data-mn]', m).forEach(fmtIn);
+      $('#noX', m).onclick = () => { $('#noForm', m).innerHTML = ''; };
+      $('#noOk', m).onclick = async () => { const b = $('#noOk', m); b.disabled = true; try { drawNo(await onOk()); after && after(); } catch (er) { fail(er); b.disabled = false; } };
     };
+    const g = id => $(id, m).value;
+    $('#noAdd', m).onclick = () => form('<b>Thêm khoản vay</b><div class="grid3"><div><label class="f">Số tiền vay (đ)</label><input class="i" id="nT" inputmode="numeric" data-mn></div><div><label class="f">Ngày</label><input class="i" type="date" id="nN" value="' + todayStr() + '"></div><div><label class="f">Ghi chú</label><input class="i" id="nG" value="Nợ vay công ty"></div></div>',
+      async () => { const r = await call('addDebt', { MaNV: maNV, SoTien: g('#nT').replace(/\D/g, ''), Ngay: g('#nN'), GhiChu: g('#nG') }); toast('Đã thêm khoản vay', 'ok'); return r; });
+    if ($('#noPay', m)) $('#noPay', m).onclick = () => form('<b>Ghi trả nợ (ngoài lương)</b><div class="grid2"><div><label class="f">Số tiền trả (đ) · còn nợ ' + money(d.ConNo) + '</label><input class="i" id="nT" inputmode="numeric" data-mn></div><div><label class="f">Ngày trả</label><input class="i" type="date" id="nN" value="' + todayStr() + '"></div>' +
+      '<div><label class="f">Hình thức</label><select class="i" id="nH"><option value="TM">Tiền mặt</option><option value="CK">Chuyển khoản</option></select></div><div><label class="f">Ghi chú</label><input class="i" id="nG" placeholder="VD: trả bớt đợt 1"></div></div>' +
+      '<div class="tiny mt"><span class="lnk" id="nAll">Trả hết ' + money(d.ConNo) + '</span></div>',
+      async () => { const r = await call('payDebt', { MaNV: maNV, SoTien: g('#nT').replace(/\D/g, ''), Ngay: g('#nN'), HinhThuc: g('#nH'), GhiChu: g('#nG') }); toast('Đã ghi trả nợ', 'ok'); return r; });
+    m.addEventListener('click', ev => { if (ev.target.id === 'nAll') { const i = $('#nT', m); i.value = Number(d.ConNo).toLocaleString('vi-VN'); } });
+    $$('[data-edno]', m).forEach(l => l.onclick = () => {
+      const x = d.Rows.find(r => r.ID === l.dataset.edno);
+      form('<b>Sửa khoản vay</b><div class="grid3"><div><label class="f">Số tiền vay (đ)</label><input class="i" id="nT" inputmode="numeric" data-mn value="' + Number(x.SoTien).toLocaleString('vi-VN') + '"></div><div><label class="f">Ngày</label><input class="i" type="date" id="nN" value="' + esc(x.Ngay) + '"></div><div><label class="f">Ghi chú</label><input class="i" id="nG" value="' + esc(x.GhiChu) + '"></div></div>',
+        async () => { const r = await call('editDebt', { ID: x.ID, SoTien: g('#nT').replace(/\D/g, ''), Ngay: g('#nN'), GhiChu: g('#nG') }); toast('Đã sửa khoản vay', 'ok'); return r; });
+    });
     // Bấm 2 lần mới xóa
     $$('[data-delno]', m).forEach(l => l.onclick = async () => {
       if (!l.dataset.sure) { l.dataset.sure = '1'; l.textContent = 'bấm lần nữa để xóa'; l.style.color = 'var(--bad)'; return; }
@@ -2119,8 +2227,8 @@ async function aDebt() {
       '<div class="stat"><b class="num" style="font-size:20px">' + money(r.TongTamUng) + '</b><span>Tạm ứng tháng ' + vnDate(r.Thang) + '</span></div>' +
       '<div class="stat" style="cursor:pointer" id="dbPay"><b style="font-size:16px;color:var(--pri)">Nhập tạm ứng →</b><span>ở Tính lương, Bước 1</span></div></div>' +
       '<div class="card"><div class="row between wrap mb"><h3>Danh sách</h3><label class="chk" style="margin:0"><input type="checkbox" id="dbAll"' + (DEBT_ALL ? ' checked' : '') + '> Hiện cả người đã trả hết</label></div>' +
-      (rows.length ? '<div class="tbl-wrap"><table class="t"><thead><tr><th>Mã</th><th>Họ tên</th><th class="right">Đã vay</th><th class="right">Đã trừ lương</th><th class="right">Còn nợ</th><th class="right">Trừ tháng ' + vnDate(r.Thang) + '</th><th class="right">Tạm ứng tháng ' + vnDate(r.Thang) + '</th></tr></thead><tbody>' +
-        rows.map(x => '<tr class="click" data-ma="' + esc(x.MaNV) + '"><td><b>' + esc(x.MaNV) + '</b></td><td>' + esc(x.HoTen) + (x.NghiViec ? ' <span class="badge b-grey">nghỉ việc</span>' : '') + '</td><td class="right num">' + (x.Vay ? money(x.Vay) : '') + '</td><td class="right num">' + (x.DaTru ? money(x.DaTru) : '') + '</td><td class="right num"><b style="color:' + (x.ConNo ? 'var(--bad)' : 'var(--ok)') + '">' + money(x.ConNo) + '</b></td><td class="right num">' + (x.TruThangNay ? money(x.TruThangNay) : '') + '</td><td class="right num">' + (x.TamUng ? money(x.TamUng) : '') + '</td></tr>').join('') +
+      (rows.length ? '<div class="tbl-wrap"><table class="t"><thead><tr><th>Mã</th><th>Họ tên</th><th class="right">Đã vay</th><th class="right">Đã trừ lương</th><th class="right">Đã trả ngoài</th><th class="right">Còn nợ</th><th class="right">Trừ tháng ' + vnDate(r.Thang) + '</th><th class="right">Tạm ứng tháng ' + vnDate(r.Thang) + '</th></tr></thead><tbody>' +
+        rows.map(x => '<tr class="click" data-ma="' + esc(x.MaNV) + '"><td><b>' + esc(x.MaNV) + '</b></td><td>' + esc(x.HoTen) + (x.NghiViec ? ' <span class="badge b-grey">nghỉ việc</span>' : '') + '</td><td class="right num">' + (x.Vay ? money(x.Vay) : '') + '</td><td class="right num">' + (x.DaTru ? money(x.DaTru) : '') + '</td><td class="right num">' + (x.DaTra ? money(x.DaTra) : '') + '</td><td class="right num"><b style="color:' + (x.ConNo ? 'var(--bad)' : 'var(--ok)') + '">' + money(x.ConNo) + '</b></td><td class="right num">' + (x.TruThangNay ? money(x.TruThangNay) : '') + '</td><td class="right num">' + (x.TamUng ? money(x.TamUng) : '') + '</td></tr>').join('') +
         '</tbody></table></div>' : '<div class="empty">Không có ai đang nợ hay tạm ứng tháng này</div>') +
       '<div class="tiny muted mt">Bấm vào 1 dòng để xem sổ nợ chi tiết, thêm khoản vay. Số nợ chỉ giảm khi bảng lương tháng đó được công bố.</div></div>';
     const open = ma => {
