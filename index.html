@@ -291,7 +291,25 @@ function scheduleRefresh() {
   }, 150);
 }
 
+/* Đo tốc độ: thời gian cả vòng (máy ↔ Google) và thời gian máy chủ xử lý, lưu 40 lần gần nhất trên máy này */
+const ACT_VN = { today: 'Mở trang chấm công', checkIn: 'Chấm công vào/ra', myAttendance: 'Lịch sử chấm công', myRequests: 'Đơn của tôi', createRequest: 'Gửi đơn',
+  myPayslips: 'Phiếu lương', me: 'Mở app', login: 'Đăng nhập', dashboard: 'Tổng quan', listEmployees: 'Danh sách nhân viên', saveEmployee: 'Lưu hồ sơ',
+  deleteEmployee: 'Xóa nhân viên', listAttendance: 'Bảng công', saveAttendance: 'Sửa công', listRequests: 'Danh sách đơn', decideRequest: 'Duyệt 1 đơn',
+  decideMany: 'Duyệt tất cả', getAdjustments: 'Bước 1 điều chỉnh', saveAdjustments: 'Lưu điều chỉnh', calcPayroll: 'Tính lương', getPayroll: 'Xem bảng lương',
+  publishPayroll: 'Công bố lương', setPaid: 'Đánh dấu đã trả', exportPayroll: 'Xuất Excel lương', exportBank: 'File chuyển khoản', otSites: 'Trang tăng ca',
+  registerOT: 'Đăng ký tăng ca', getSettings: 'Cài đặt', listBranches: 'Công trình', listSchedules: 'Lịch làm việc', netOT: 'Tăng ca lương NET' };
+let SPEED = [];
+try { SPEED = JSON.parse(localStorage.getItem('cc_speed') || '[]'); } catch (e) { SPEED = []; }
+function logSpeed(action, t0, r) {
+  try {
+    SPEED.unshift({ a: action, t: Date.now() - t0, s: r && r.ms != null ? r.ms : null, at: new Date().toTimeString().slice(0, 8) });
+    SPEED = SPEED.slice(0, 40);
+    localStorage.setItem('cc_speed', JSON.stringify(SPEED));
+  } catch (e) {}
+}
+
 function rawCall(action, payload, keepNav) {
+  const t0 = Date.now();
   return new Promise((resolve, reject) => {
     if (!(window.google && google.script && google.script.run)) {
       // Phương án dự phòng: trang đặt ngoài Apps Script, gọi API qua địa chỉ /exec
@@ -301,7 +319,7 @@ function rawCall(action, payload, keepNav) {
       fetch(window.API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ a: action, t: TOKEN, p: payload || {} }) })
         .then(x => x.json())
         .then(r => {
-          busy(false);
+          busy(false); logSpeed(action, t0, r);
           const msg = r && r.ok ? '' : ((r && r.error) || 'Có lỗi xảy ra');
           if (msg.indexOf('AUTH:') === 0) return authExpired(msg);
           if (nav0 !== NAV && !keepNav) return;
@@ -314,7 +332,7 @@ function rawCall(action, payload, keepNav) {
     const nav0 = NAV;
     google.script.run
       .withSuccessHandler(r => {
-        busy(false);
+        busy(false); logSpeed(action, t0, r);
         const msg = r && r.ok ? '' : ((r && r.error) || 'Có lỗi xảy ra');
         if (msg.indexOf('AUTH:') === 0) return authExpired(msg);
         if (nav0 !== NAV && !keepNav) return;
@@ -1263,12 +1281,16 @@ function empForm(e, branches) {
     const b = ev.currentTarget;
     if (!b.dataset.sure) { b.dataset.sure = '1'; b.textContent = 'Bấm lần nữa để xóa'; b.style.background = 'var(--bad-soft)'; return; }
     if (!(await confirmBox('XÓA VĨNH VIỄN ' + e.HoTen + ' (' + e.MaNV + ') cùng toàn bộ chấm công, đơn từ, khuôn mặt, sổ nợ, bảng lương chưa công bố? Không khôi phục được.', 'Xóa vĩnh viễn'))) return;
+    // Ẩn khỏi danh sách ngay; máy chủ xóa phía sau, lỗi thì hiện lại
+    const tr = $('#eList tr[data-ma="' + e.MaNV + '"]');
+    if (tr) tr.style.display = 'none';
+    toast('Đang xóa ' + e.HoTen + '…');
     try {
       const r = await call('deleteEmployee', { MaNV: e.MaNV });
       const d = r.DaXoa || {};
       toast('Đã xóa ' + r.HoTen + ' (' + r.MaNV + ')' + (d.ChamCong ? ', ' + d.ChamCong + ' dòng chấm công' : '') + (d.DonTu ? ', ' + d.DonTu + ' đơn' : ''), 'ok');
       aEmp();
-    } catch (err) { fail(err); }
+    } catch (err) { fail(err); if (tr) tr.style.display = ''; }
   };
   if (!isNew) $('#eReset', m).onclick = async () => {
     if (!(await confirmBox('Đặt lại mật khẩu của ' + e.HoTen + ' về mật khẩu mặc định?', 'Đặt lại'))) return;
@@ -1412,7 +1434,11 @@ async function aReq() {
     $$('[data-photo]').forEach(s => s.onclick = () => showPhoto(s.dataset.photo, 'Ảnh minh chứng'));
     if ($('#rqAll')) $('#rqAll').onclick = async () => {
       if (!(await confirmBox('Duyệt ' + cho.length + ' đơn đang hiện? Số giờ tăng ca giữ nguyên như đã đăng ký.', 'Duyệt tất cả'))) return;
-      try { const r = await call('decideMany', { IDs: cho.map(d => d.ID), TrangThai: 'DUYET' }); toast('Đã duyệt ' + r.SoDon + ' đơn' + (r.BoQua.length ? '. Không tự duyệt được đơn mình đăng ký: ' + r.BoQua.join(', ') : ''), 'ok'); aReq(); } catch (e) { fail(e); }
+      // Hiện kết quả ngay, máy chủ ghi phía sau; lỗi thì tải lại danh sách thật
+      cho.forEach(d => { const b = $('[data-ok="' + d.ID + '"]'); const it = b && b.closest('.it'); if (it) it.style.display = 'none'; });
+      if ($('#rqAll')) $('#rqAll').remove();
+      toast('Đang duyệt ' + cho.length + ' đơn…');
+      try { const r = await call('decideMany', { IDs: cho.map(d => d.ID), TrangThai: 'DUYET' }); toast('Đã duyệt ' + r.SoDon + ' đơn' + (r.BoQua.length ? '. Không tự duyệt được đơn mình đăng ký: ' + r.BoQua.join(', ') : ''), 'ok'); aReq(); } catch (e) { fail(e); aReq(); }
     };
     $('#rqReopen').onclick = () => {
       const m = modal('Mở lại giải trình quá hạn', '<p class="small muted">Chỉ huy trưởng quên đăng ký và đã quá hạn giải trình? Chọn công trình và ngày để cho họ gửi giải trình thêm.</p>' +
@@ -1430,7 +1456,11 @@ async function aReq() {
         '<button class="btn block mt2 ' + (st === 'DUYET' ? 'ok' : 'bad') + '" id="dcGo">' + (st === 'DUYET' ? 'Duyệt' : 'Từ chối') + '</button>');
       $('#dcGo', m).onclick = async () => {
         const f = formData(m); f.ID = id; f.TrangThai = st;
-        try { await call('decideRequest', f); closeModal(); toast('Đã cập nhật', 'ok'); aReq(); } catch (e) { fail(e); }
+        // Đóng hộp + ẩn đơn ngay; máy chủ ghi phía sau, lỗi thì hiện lại
+        closeModal();
+        const b = $('[data-ok="' + id + '"]'); const it = b && b.closest('.it');
+        if (it) it.style.display = 'none';
+        try { await call('decideRequest', f); toast(st === 'DUYET' ? 'Đã duyệt' : 'Đã từ chối', 'ok'); aReq(); } catch (e) { fail(e); if (it) it.style.display = ''; aReq(); }
       };
     };
     $$('[data-ok]').forEach(b => b.onclick = () => decide(b.dataset.ok, 'DUYET'));
@@ -1541,11 +1571,16 @@ async function aPay() {
       $$('#pPaidF .chip').forEach(c => c.onclick = () => { PAY_PAIDF = c.dataset.f; aPay(); });
       if ($('#pPaidAll')) $('#pPaidAll').onclick = async () => {
         if (!(await confirmBox('Đánh dấu ' + chuaTT.length + ' người chưa thanh toán là ĐÃ chuyển khoản lương tháng ' + vnDate(PAY_MONTH) + '?', 'Đã thanh toán'))) return;
-        try { await call('setPaid', { Thang: PAY_MONTH, MaNV: chuaTT.map(r => r.MaNV), DaTra: true }); toast('Đã đánh dấu thanh toán', 'ok'); aPay(); } catch (e) { fail(e); }
+        chuaTT.forEach(r => { const c = $('[data-paid="' + r.MaNV + '"]'); if (c) c.checked = true; });
+        try { await call('setPaid', { Thang: PAY_MONTH, MaNV: chuaTT.map(r => r.MaNV), DaTra: true }); toast('Đã đánh dấu thanh toán', 'ok'); aPay(); } catch (e) { fail(e); aPay(); }
       };
       $$('[data-paid]').forEach(cb => {
         cb.onclick = e => e.stopPropagation();
-        cb.onchange = async () => { try { await call('setPaid', { Thang: PAY_MONTH, MaNV: [cb.dataset.paid], DaTra: cb.checked }); aPay(); } catch (e) { fail(e); cb.checked = !cb.checked; } };
+        cb.onchange = async () => {
+          // Ô tích đổi ngay; chỉ báo lỗi nếu máy chủ không lưu được
+          const badge = cb.parentNode.querySelector('.badge'); if (badge) badge.remove();
+          try { await call('setPaid', { Thang: PAY_MONTH, MaNV: [cb.dataset.paid], DaTra: cb.checked }); } catch (e) { fail(e); cb.checked = !cb.checked; }
+        };
       });
       $$('#adBody tbody tr[data-ma]').forEach(tr => tr.onclick = e => {
         if (e.target.closest('[data-stop]')) return;
@@ -1597,8 +1632,14 @@ async function sGen() {
         '<div class="small muted mt">Mặc định 0,5. Nếu nhân viên hay bị báo "không khớp" dù đúng người, tăng lên 0,55. Nếu lo người khác chấm hộ, giảm xuống 0,45.</div></div>' +
       '<div class="card"><h3>Khác</h3>' + radio('BatBuocGPS', [['CO', 'Bắt buộc GPS trong bán kính chi nhánh'], ['KHONG', 'Chỉ ghi nhận vị trí, không chặn']]) +
         '<div class="grid2">' + inp('MatKhauMacDinh', 'Mật khẩu mặc định cho tài khoản mới') + inp('PhepNamMacDinh', 'Số ngày phép năm mặc định', 'number') + '</div></div>' +
-      '<div class="right"><button class="btn" id="sSave">Lưu cài đặt</button></div></div>';
+      '<div class="right"><button class="btn" id="sSave">Lưu cài đặt</button></div></div>' +
+      '<div class="card mt2"><div class="row between"><h3>Tốc độ phản hồi (đo trên máy này)</h3><button class="btn light sm" id="spClear">Xóa số đo</button></div>' +
+      '<div class="small muted">Tổng = thời gian bạn chờ (gồm mạng + Google khởi động). Máy chủ = thời gian app xử lý trên Google. Hai số chênh nhiều là do mạng / Google khởi động.</div>' +
+      (SPEED.length ? '<div class="tbl-wrap mt"><table class="t"><thead><tr><th>Lúc</th><th>Thao tác</th><th class="right">Tổng (giây)</th><th class="right">Máy chủ (giây)</th></tr></thead><tbody>' +
+        SPEED.map(x => '<tr><td class="num">' + esc(x.at) + '</td><td>' + esc(ACT_VN[x.a] || x.a) + '</td><td class="right num"' + (x.t > 3000 ? ' style="color:var(--bad)"' : '') + '>' + (x.t / 1000).toFixed(1) + '</td><td class="right num">' + (x.s == null ? '' : (x.s / 1000).toFixed(1)) + '</td></tr>').join('') +
+        '</tbody></table></div>' : '<div class="empty">Chưa có số đo. Dùng app một lúc rồi quay lại đây.</div>') + '</div>';
     $$('#sForm .chips').forEach(g => $$('input[type=radio]', g).forEach(r => r.onchange = () => $$('.chip', g).forEach(c => c.classList.toggle('on', $('input', c).checked))));
+    $('#spClear').onclick = () => { SPEED = []; try { localStorage.removeItem('cc_speed'); } catch (e) {} sGen(); };
     $('#sSave').onclick = async () => {
       const f = {};
       $$('#sForm [name]').forEach(el => { if (el.type === 'radio') { if (el.checked) f[el.name] = el.value; } else f[el.name] = el.value; });
