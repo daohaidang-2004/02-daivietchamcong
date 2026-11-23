@@ -49,6 +49,46 @@ textarea.i{min-height:70px;resize:vertical}
 .top .who{font-weight:600;font-size:16px}
 .top .btn{white-space:nowrap;flex:none;background:rgba(255,255,255,.15);min-height:34px;padding:6px 12px;font-size:13px}
 main{max-width:1100px;margin:0 auto;padding:14px 14px 96px}
+/* Menu trái cho Quản trị trên máy tính */
+#side{display:none}
+.sd-brand{display:flex;align-items:center;gap:10px;padding:16px 16px 10px}
+.sd-brand .lg{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,#0b5cad,#0a3f78);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px}
+.sd-grp{font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:#98a2b3;margin:14px 18px 4px}
+.sd-it{display:flex;align-items:center;gap:10px;margin:1px 8px;padding:8px 10px;border-radius:9px;cursor:pointer;color:#475467;font-size:14px;font-weight:500;border:0;background:none;width:calc(100% - 16px);text-align:left}
+.sd-it svg{width:19px;height:19px;flex:none}
+.sd-it:hover{background:#f2f4f7}
+.sd-it.on{background:var(--pri-soft);color:var(--pri);font-weight:700}
+.sd-n{margin-left:auto;background:var(--bad);color:#fff;border-radius:10px;font-size:11px;font-weight:700;padding:0 7px;line-height:18px}
+.sd-n:empty{display:none}
+.nav .nb{position:absolute;top:2px;left:calc(50% + 6px);background:var(--bad);color:#fff;border-radius:9px;font-size:10px;font-weight:700;padding:0 5px;line-height:16px}
+.nav .nb:empty{display:none}
+.nav button{position:relative}
+.hdmine{display:none;flex:none;background:rgba(255,255,255,.15);color:#fff;border:0;border-radius:20px;padding:0 14px;height:40px;font-weight:600;cursor:pointer;align-items:center;gap:6px}
+.hdmine svg{width:18px;height:18px}
+@media (min-width:900px){
+  body.has-side #side{display:block;position:fixed;left:0;top:0;bottom:0;width:236px;background:#fff;border-right:1px solid var(--line);overflow:auto;z-index:25;padding-bottom:20px}
+  body.has-side .top{margin-left:236px}
+  body.has-side main{margin-left:236px;max-width:none;padding:18px 28px 40px}
+  body.has-side .nav{display:none}
+  body.has-side .hdmine{display:inline-flex}
+  body.has-side #toast{bottom:30px}
+}
+/* Tổng quan: tiến độ kỳ lương + việc cần làm */
+.ky{display:flex;gap:6px;margin:8px 0 4px;flex-wrap:wrap}
+.ky div{flex:1;min-width:92px;border-radius:10px;padding:8px 8px;background:var(--grey-soft);color:var(--muted);font-size:12.5px;font-weight:600;text-align:center;line-height:1.3}
+.ky div small{display:block;font-weight:500;font-size:11px}
+.ky .xong{background:var(--ok-soft);color:var(--ok)}
+.ky .dang{background:var(--pri);color:#fff}
+.todo{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+@media (max-width:640px){.todo{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.todo .td{border:1px solid var(--line);border-radius:12px;padding:12px 14px;cursor:pointer;background:#fff}
+.todo .td:hover{border-color:#b9c4d4;box-shadow:var(--shadow)}
+.todo .td b{display:block;font-size:26px;line-height:1.15}
+.todo .td span{font-size:13px;color:var(--muted)}
+.todo .td.zero b{color:#c3cad5}
+.more-it{display:flex;align-items:center;gap:12px;padding:12px 6px;border-bottom:1px solid var(--line);cursor:pointer;font-weight:500}
+.more-it svg{width:21px;height:21px;color:var(--pri)}
+
 .card{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);padding:16px;margin-bottom:14px}
 .card.flat{box-shadow:none;border:1px solid var(--line)}
 .nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--line);display:flex;z-index:30;padding-bottom:env(safe-area-inset-bottom)}
@@ -260,13 +300,14 @@ table.t input.i{min-height:34px;padding:6px 8px;font-size:13px;min-width:110px}
 
 <!-- ỨNG DỤNG -->
 <div id="appView" class="hidden">
+  <aside id="side"></aside>
   <div class="top">
     <div class="row between">
       <div style="min-width:0">
         <div class="co" id="hdCo"></div>
         <div class="who" id="hdWho"></div>
       </div>
-      <div class="row" style="gap:8px;flex:none"><button class="hdbell" id="btnBell" title="Thông báo" aria-label="Thông báo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><b id="bellN" class="hidden">0</b></button><button class="hdav" id="btnMe" title="Tài khoản" aria-label="Tài khoản"></button></div>
+      <div class="row" style="gap:8px;flex:none"><button class="hdmine" id="btnMine"></button><button class="hdbell" id="btnBell" title="Thông báo" aria-label="Thông báo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><b id="bellN" class="hidden">0</b></button><button class="hdav" id="btnMe" title="Tài khoản" aria-label="Tài khoản"></button></div>
     </div>
   </div>
   <main id="main"></main>
@@ -333,7 +374,7 @@ let refreshTimer = null;
 
 function call(action, payload) {
   if (READS.indexOf(action) < 0) {
-    if (['info', 'me', 'login', 'getPhoto', 'logout', 'otSites', 'netOT', 'debts', 'myProfile', 'netPC', 'exportBank', 'exportPayroll', 'exportAttendance', 'myNotices', 'readNotices', 'listNotices'].indexOf(action) < 0) { CACHE = {}; saveCache(); } // có thay đổi dữ liệu → xóa đệm
+    if (['info', 'me', 'login', 'getPhoto', 'logout', 'otSites', 'netOT', 'debts', 'myProfile', 'netPC', 'exportBank', 'exportPayroll', 'exportAttendance', 'myNotices', 'readNotices', 'listNotices', 'adminTodo', 'debtList'].indexOf(action) < 0) { CACHE = {}; saveCache(); } // có thay đổi dữ liệu → xóa đệm
     return rawCall(action, payload);
   }
   const key = action + '|' + JSON.stringify(payload || {});
@@ -371,7 +412,7 @@ const ACT_VN = { today: 'Mở trang chấm công', checkIn: 'Chấm công vào/r
   deleteEmployee: 'Xóa nhân viên', deleteEmployees: 'Xóa nhiều nhân viên', listAttendance: 'Bảng công', saveAttendance: 'Sửa công', listRequests: 'Danh sách đơn', decideRequest: 'Duyệt 1 đơn',
   decideMany: 'Duyệt tất cả', getAdjustments: 'Bước 1 điều chỉnh', saveAdjustments: 'Lưu điều chỉnh', calcPayroll: 'Tính lương', getPayroll: 'Xem bảng lương',
   publishPayroll: 'Công bố lương', setPaid: 'Đánh dấu đã trả', exportPayroll: 'Xuất Excel lương', exportBank: 'File chuyển khoản', otSites: 'Trang tăng ca',
-  registerOT: 'Đăng ký tăng ca', getSettings: 'Cài đặt', listBranches: 'Công trình', listSchedules: 'Lịch làm việc', netOT: 'Tăng ca lương NET', myNotices: 'Thông báo', sendNotice: 'Gửi thông báo', explainAttendance: 'Gửi giải trình', exportAttendance: 'Xuất bảng công', setRole: 'Đổi quyền' };
+  registerOT: 'Đăng ký tăng ca', getSettings: 'Cài đặt', listBranches: 'Công trình', listSchedules: 'Lịch làm việc', netOT: 'Tăng ca lương NET', myNotices: 'Thông báo', sendNotice: 'Gửi thông báo', explainAttendance: 'Gửi giải trình', exportAttendance: 'Xuất bảng công', setRole: 'Đổi quyền', adminTodo: 'Việc cần làm', debtList: 'Sổ nợ' };
 let SPEED = [];
 try { SPEED = JSON.parse(localStorage.getItem('cc_speed') || '[]'); } catch (e) { SPEED = []; }
 function logSpeed(action, t0, r) {
@@ -536,6 +577,7 @@ async function doLogout() {
 }
 $('#btnMe').onclick = () => go('account');
 $('#btnBell').onclick = () => go('notices');
+$('#btnMine').onclick = () => go('checkin');
 
 const isAdmin = () => ME && ME.VaiTro === 'ADMIN';
 const coQuyenTangCa = () => ME && (ME.VaiTro === 'ADMIN' || String(ME.QuyenTangCa || '').trim() !== '');
@@ -550,14 +592,22 @@ function startApp() {
   // Thanh menu: nút chấm công to ở giữa; Tài khoản luôn mở được bằng nút tròn góc phải trên
   const BC = ['history', 'Bảng công', IC.list], DT = ['requests', 'Đơn từ', IC.doc], PL = ['payslip', 'Phiếu lương', IC.money],
     TK = ['account', 'Tài khoản', IC.user], TC = ['ot', 'Tăng ca', IC.ot], QL = ['admin', 'Quản lý', IC.admin];
-  const items = isAdmin() ? [QL, BC, 'FAB', TC, PL] : coQuyenTangCa() ? [BC, TC, 'FAB', PL, DT] : [BC, DT, 'FAB', PL, TK];
+  // Quản trị: thanh dưới (điện thoại) = Tổng quan · Duyệt đơn · [Chấm công] · Bảng công · Thêm; máy tính dùng menu trái
+  const items = isAdmin() ? [['admin', 'Tổng quan', SI.dash, 'dash'], ['admin', 'Duyệt đơn', SI.req, 'req'], 'FAB', ['admin', 'Bảng công', SI.att, 'att'], ['more', 'Thêm', SI.more]]
+    : coQuyenTangCa() ? [BC, TC, 'FAB', PL, DT] : [BC, DT, 'FAB', PL, TK];
   $('#nav').innerHTML = items.map(i => i === 'FAB' ? '<button class="fab" data-v="checkin"><span class="fb">' + IC.finger + '</span><span>Chấm công</span></button>' :
-    '<button data-v="' + i[0] + '">' + i[2] + '<span>' + i[1] + '</span></button>').join('');
-  $$('#nav button').forEach(b => b.onclick = () => go(b.dataset.v));
+    '<button data-v="' + i[0] + '"' + (i[3] ? ' data-sub="' + i[3] + '"' : '') + '>' + i[2] + '<span>' + i[1] + '</span><i class="nb" data-nb="' + (i[3] || i[0]) + '"></i></button>').join('');
+  $$('#nav button').forEach(b => b.onclick = () => b.dataset.v === 'more' ? openMore() : go(b.dataset.v, b.dataset.sub));
+  document.body.classList.toggle('has-side', isAdmin());
+  $('#side').innerHTML = isAdmin() ? renderSide() : '';
+  $$('#side [data-k]').forEach(b => b.onclick = () => goMenu(b.dataset.k));
+  $('#btnMine').innerHTML = IC.finger + ' Chấm công của tôi';
+  TODO = null;
+  if (isAdmin()) setTimeout(loadTodo, 800);
   go(isAdmin() ? 'admin' : 'checkin');
   if (ME.PhaiDoiMK) forceChangePassword();
   NOTI = null; $('#bellN').classList.add('hidden');
-  clearInterval(notiTimer); notiTimer = setInterval(() => { if (TOKEN && !document.hidden) loadNotices(); }, 180000);
+  clearInterval(notiTimer); notiTimer = setInterval(() => { if (TOKEN && !document.hidden) { loadNotices(); if (isAdmin()) loadTodo(); } }, 180000);
   setTimeout(() => loadNotices(true), 1200);
   // Tải sẵn ngầm vài trang hay xem để lúc bấm vào hiện ngay
   setTimeout(() => {
@@ -569,7 +619,8 @@ function startApp() {
 let CUR = '';
 function go(view, sub) {
   CUR = view; stopClock(); NAV++;
-  $$('#nav button').forEach(b => b.classList.toggle('on', b.dataset.v === view));
+  if (view === 'admin' && sub) ADMIN_SUB = sub;
+  markNav();
   window.scrollTo(0, 0);
   const V = { checkin: vCheckin, history: vHistory, requests: vRequests, payslip: vPayslip, account: vAccount, admin: vAdmin, ot: vOT, notices: vNotices };
   const fn = V[view] || vCheckin;
@@ -1307,8 +1358,10 @@ function vAccount() {
     '<div class="card" id="pfCard"><h3>Thông tin cá nhân & tài khoản nhận lương</h3><div class="small muted mt">Đang tải…</div></div>' +
     '<div class="card" id="faceCard"><h3>Khuôn mặt chấm công</h3><div class="small muted mt">Đang tải…</div></div>' +
     '<div class="card" id="pwCard"><h3>Đổi mật khẩu</h3>' + pwFormHtml() + '</div>' +
+    (isAdmin() ? '<div class="row wrap mb"><button class="btn light grow" id="acHis">' + IC.list.replace('<svg', '<svg width="18" height="18"') + ' Bảng công của tôi</button><button class="btn light grow" id="acPay">' + IC.money.replace('<svg', '<svg width="18" height="18"') + ' Phiếu lương của tôi</button></div>' : '') +
     '<div class="row wrap mb"><button class="btn light grow" id="acReq">' + IC.doc.replace('<svg', '<svg width="18" height="18"') + ' Đơn từ của tôi</button><button class="btn light grow" id="acOut" style="color:var(--bad)">Đăng xuất</button></div>';
   $('#acReq').onclick = () => go('requests');
+  if ($('#acHis')) { $('#acHis').onclick = () => go('history'); $('#acPay').onclick = () => go('payslip'); }
   $('#acOut').onclick = doLogout;
   bindPw($('#pwCard'), () => $$('#pwCard input').forEach(i => i.value = ''));
   call('myProfile').then(pf => {
@@ -1372,10 +1425,98 @@ const dangThuViec = e => !!e.ThuViecDen && e.ThuViecDen >= todayStr();
 
 function vAdmin(sub) {
   ADMIN_SUB = sub || ADMIN_SUB; NAV++;
+  if (CUR !== 'admin') { CUR = 'admin'; stopClock(); window.scrollTo(0, 0); }
+  markNav();
   REFRESH = ADMIN_SUB === 'set' ? null : () => vAdmin(ADMIN_SUB);
-  $('#main').innerHTML = '<div class="chips" id="adTabs">' + ADMIN_TABS.map(t => '<button class="chip ' + (t[0] === ADMIN_SUB ? 'on' : '') + '" data-t="' + t[0] + '">' + t[1] + '</button>').join('') + '</div><div id="adBody"><div class="empty">Đang tải…</div></div>';
-  $$('#adTabs .chip').forEach(c => c.onclick = () => vAdmin(c.dataset.t));
-  ({ dash: aDash, emp: aEmp, face: aFace, att: aAtt, req: aReq, pay: aPay, tb: aNotice, set: aSet })[ADMIN_SUB]();
+  $('#main').innerHTML = '<div id="adBody"><div class="empty">Đang tải…</div></div>';
+  ({ dash: aDash, emp: aEmp, face: aFace, att: aAtt, req: aReq, pay: aPay, debt: aDebt, role: aRole, tb: aNotice, set: aSet })[ADMIN_SUB]();
+}
+
+/* Menu quản trị gom theo quy trình làm lương hằng tháng */
+const SI = {
+  dash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 3h7v9H3zM14 3h7v5h-7zM14 12h7v9h-7zM3 16h7v5H3z"/></svg>',
+  att: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4M8 13h2M14 13h2M8 17h2"/></svg>',
+  req: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 11l2 2 4-4"/><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/></svg>',
+  ot: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 1.5M9 2h6"/></svg>',
+  pay: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M8 11h2M14 11h2M8 15h2M14 15h2M8 19h8"/></svg>',
+  debt: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 7H5a2 2 0 0 1 0-4h13v4"/><path d="M3 5v14a2 2 0 0 0 2 2h15V7"/><circle cx="16" cy="14" r="1.5"/></svg>',
+  emp: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="8" r="3.5"/><path d="M2 21c1-4 3.8-6 7-6s6 2 7 6"/><path d="M16 4a3.5 3.5 0 0 1 0 7M18 15c2 .8 3.4 2.8 4 6"/></svg>',
+  face: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/><path d="M9 10v1M15 10v1M12 10v3h-1M9.5 16a3.5 3.5 0 0 0 5 0"/></svg>',
+  role: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z"/><rect x="9" y="11" width="6" height="5" rx="1"/><path d="M10 11V9a2 2 0 0 1 4 0v2"/></svg>',
+  tb: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 11v2a1 1 0 0 0 1 1h3l6 4V6L7 10H4a1 1 0 0 0-1 1z"/><path d="M17 9a4 4 0 0 1 0 6M19.5 6.5a8 8 0 0 1 0 11"/></svg>',
+  set: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
+  more: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>'
+};
+const ADMIN_MENU = [
+  ['', [['dash', 'Tổng quan']]],
+  ['Chấm công', [['att', 'Bảng công'], ['req', 'Duyệt đơn'], ['ot', 'Tăng ca công trình']]],
+  ['Lương', [['pay', 'Tính lương'], ['debt', 'Tạm ứng, sổ nợ']]],
+  ['Nhân sự', [['emp', 'Nhân viên'], ['face', 'Khuôn mặt'], ['role', 'Phân quyền']]],
+  ['Truyền thông', [['tb', 'Thông báo']]],
+  ['Hệ thống', [['set', 'Cài đặt']]]
+];
+function renderSide() {
+  return '<div class="sd-brand"><div class="lg">' + esc(initials(INFO.TenCongTy ? 'Đại Việt' : 'ĐV')) + '</div><div><b style="font-size:15px">Quản trị</b><div class="tiny muted">' + esc(ME.HoTen) + '</div></div></div>' +
+    ADMIN_MENU.map(g => (g[0] ? '<div class="sd-grp">' + esc(g[0]) + '</div>' : '') + g[1].map(i => '<button class="sd-it" data-k="' + i[0] + '">' + SI[i[0]] + '<span>' + esc(i[1]) + '</span><i class="sd-n" data-nb="' + i[0] + '"></i></button>').join('')).join('');
+}
+function goMenu(k) { closeModal(); if (k === 'ot') go('ot'); else go('admin', k); }
+function markNav() {
+  const k = CUR === 'admin' ? ADMIN_SUB : CUR;
+  $$('#side [data-k]').forEach(b => b.classList.toggle('on', b.dataset.k === k));
+  $$('#nav button').forEach(b => {
+    let on = b.dataset.sub ? (CUR === 'admin' && ADMIN_SUB === b.dataset.sub) : b.dataset.v === CUR;
+    if (b.dataset.v === 'more') on = isAdmin() && ((CUR === 'admin' && ['dash', 'req', 'att'].indexOf(ADMIN_SUB) < 0) || CUR === 'ot');
+    b.classList.toggle('on', on);
+  });
+}
+/** Điện thoại: nút "Thêm" mở danh sách đầy đủ theo nhóm */
+function openMore() {
+  const m = modal('Quản trị', ADMIN_MENU.map(g => (g[0] ? '<div class="sd-grp" style="margin-left:4px">' + esc(g[0]) + '</div>' : '') +
+    g[1].map(i => '<div class="more-it" data-k="' + i[0] + '">' + SI[i[0]] + '<span class="grow">' + esc(i[1]) + '</span><i class="sd-n" data-nb="' + i[0] + '"></i></div>').join('')).join('') +
+    '<div class="sd-grp" style="margin-left:4px">Của tôi</div>' +
+    [['history', 'Bảng công của tôi', IC.list], ['payslip', 'Phiếu lương của tôi', IC.money], ['requests', 'Đơn từ của tôi', IC.doc], ['account', 'Tài khoản', IC.user]].map(i =>
+      '<div class="more-it" data-mine="' + i[0] + '">' + i[2] + '<span class="grow">' + i[1] + '</span></div>').join(''));
+  $$('[data-k]', m).forEach(x => x.onclick = () => goMenu(x.dataset.k));
+  $$('[data-mine]', m).forEach(x => x.onclick = () => { closeModal(); go(x.dataset.mine); });
+  paintBadges();
+}
+/* Việc cần làm: số đỏ trên menu + trang Tổng quan */
+let TODO = null;
+async function loadTodo() {
+  try { TODO = await rawCall('adminTodo', {}, true); paintBadges(); if (CUR === 'admin' && ADMIN_SUB === 'dash' && $('#todoBox')) renderTodo(); } catch (e) {}
+}
+function paintBadges() {
+  if (!TODO) return;
+  const v = { req: TODO.DonCho, att: TODO.LoiCong, face: TODO.MatCho };
+  v.more = TODO.MatCho;
+  $$('[data-nb]').forEach(el => { const k = el.dataset.nb; const x = v[k]; el.textContent = x ? (x > 99 ? '99+' : x) : ''; });
+}
+function renderTodo() {
+  const t = TODO, box = $('#todoBox'); if (!box || !t) return;
+  const dang = t.Buoc.findIndex(b => !b.Xong);
+  const td = (n, txt, k, color) => '<div class="td' + (n ? '' : ' zero') + '" data-go="' + k + '"><b' + (n && color ? ' style="color:' + color + '"' : '') + '>' + n + '</b><span>' + txt + '</span></div>';
+  const dl = t.DonTheoLoai || {};
+  const chiTiet = [['OT', 'tăng ca'], ['CHAMCONG', 'giải trình'], ['PHEP', 'phép'], ['KHONGLUONG', 'không lương']].filter(x => dl[x[0]]).map(x => dl[x[0]] + ' ' + x[1]).join(', ');
+  box.innerHTML = '<div class="card"><div class="row between wrap"><h3>Kỳ lương tháng ' + vnDate(t.KyLuong) + '</h3>' +
+      (dang >= 0 ? '<span class="small muted">Bước tiếp theo: <b style="color:var(--pri)">' + esc(t.Buoc[dang].Ten) + '</b></span>' : '<span class="badge b-ok">Đã xong kỳ lương</span>') + '</div>' +
+      '<div class="ky">' + t.Buoc.map((b, i) => '<div class="' + (b.Xong ? 'xong' : i === dang ? 'dang' : '') + '" data-step="' + i + '" style="cursor:pointer">' + (b.Xong ? '✓ ' : (i + 1) + '. ') + esc(b.Ten) + (b.Ghi ? '<small>' + esc(b.Ghi) + '</small>' : '') + '</div>').join('') + '</div></div>' +
+    '<div class="card"><h3 class="mb">Việc cần làm</h3><div class="todo">' +
+      td(t.DonCho, 'Đơn chờ duyệt' + (chiTiet ? ' (' + chiTiet + ')' : ''), 'req', 'var(--bad)') +
+      td(t.LoiCong, 'Ngày công lỗi tháng ' + vnDate(t.ThangNay) + ' chưa giải trình', 'att', 'var(--warn)') +
+      td(t.MatCho, 'Khuôn mặt chờ duyệt', 'face', 'var(--warn)') +
+      td(t.HetThuViec, 'Người hết thử việc tháng này', 'emp', 'var(--pri)') +
+      td(t.ThieuSTK, 'Nhân viên chưa có số tài khoản', 'emp', 'var(--pri)') +
+      td(t.ThongBao.ChuaDoc, 'Lượt chưa đọc ở ' + t.ThongBao.SoTin + ' thông báo', 'tb', 'var(--pri)') +
+    '</div></div>';
+  $$('#todoBox [data-go]').forEach(x => x.onclick = () => {
+    if (x.dataset.go === 'att') { ATT_MONTH = t.ThangNay; ATT_VIEW = 'grid'; ATT_ERR = true; }
+    go('admin', x.dataset.go);
+  });
+  $$('#todoBox [data-step]').forEach(x => x.onclick = () => {
+    const i = Number(x.dataset.step);
+    if (i <= 2) { if (i === 1) go('admin', 'req'); else { ATT_MONTH = t.KyLuong; ATT_VIEW = 'grid'; ATT_ERR = i === 2; go('admin', 'att'); } }
+    else { PAY_MONTH = t.KyLuong; go('admin', 'pay'); }
+  });
 }
 const body = () => $('#adBody');
 
@@ -1397,7 +1538,7 @@ async function aDash() {
         (x.GioVao ? ' · vào ' + esc(x.GioVao) + (x.GioRa ? ' · ra ' + esc(x.GioRa) : '') : '') + (x.ViTri ? ' · ' + esc(x.ViTri) : '') + '</div></div>' +
         '<span class="badge ' + ST[x.TrangThai][1] + '">' + ST[x.TrangThai][0] + '</span></div>').join('') : '<div class="empty">Không có ai</div>';
     };
-    body().innerHTML =
+    body().innerHTML = '<div id="todoBox">' + (TODO ? '' : '<div class="card empty">Đang tổng hợp việc cần làm…</div>') + '</div>' +
       '<div class="row between mb"><h2>Hôm nay ' + vnDate(d.Ngay) + '</h2>' + (d.NgayLe ? '<span class="badge b-pri">' + esc(d.NgayLe) + '</span>' : '') + '</div>' +
       '<div class="stats"><div class="stat"><b>' + d.DaCheckIn + '<small class="muted" style="font-size:14px">/' + d.TongNV + '</small></b><span>Đã check-in</span></div>' +
       '<div class="stat"><b style="color:var(--warn)">' + d.DiMuon + '</b><span>Đi muộn</span></div>' +
@@ -1412,6 +1553,8 @@ async function aDash() {
         [['', 'Tất cả'], ['CHUA', 'Chưa chấm'], ['DUNGGIO', 'Đúng giờ'], ['MUON', 'Đi muộn'], ['NGHI', 'Nghỉ phép']].map(f => '<button class="chip ' + (f[0] === '' ? 'on' : '') + '" data-f="' + f[0] + '">' + f[1] + '</button>').join('') +
       '</div><input class="i" id="dSearch" placeholder="Tìm tên / mã" style="max-width:220px"></div><div class="list" id="dList"></div></div>';
     $('#goReq').onclick = () => vAdmin('req');
+    if (TODO) renderTodo();
+    loadTodo();
     if ($('#goFace')) $('#goFace').onclick = () => vAdmin('face');
     if ($('#goEmp')) $('#goEmp').onclick = () => vAdmin('emp');
     $$('#dFil .chip').forEach(c => c.onclick = () => { filter = c.dataset.f; $$('#dFil .chip').forEach(x => x.classList.toggle('on', x === c)); render(); });
@@ -1540,30 +1683,7 @@ function empForm(e, branches) {
       $('#netMsg', m).innerHTML = '<span class="badge b-ok">Phụ cấp ' + money(r.PhuCap) + ' → đủ công thực nhận ' + money(r.ThucNhan) + '</span>' + (r.GhiChu ? ' <span class="muted">' + esc(r.GhiChu) + '</span>' : '') + ' <span class="muted">Bấm Lưu để ghi lại.</span>';
     } catch (e) { fail(e); }
   };
-  if (!isNew) {
-    const drawNo = d => {
-      const box = $('#noBox', m); if (!box) return;
-      box.className = '';
-      box.innerHTML = '<div class="row between"><span>Còn nợ: <b style="font-size:16px">' + money(d.ConNo) + 'đ</b></span><button type="button" class="btn ghost sm" id="noAdd">+ Thêm khoản vay</button></div>' +
-        (d.Rows.length ? '<div class="tbl-wrap mt"><table class="t"><thead><tr><th>Ngày</th><th>Nội dung</th><th class="right">Vay</th><th class="right">Đã trừ</th><th class="right">Còn lại</th><th></th></tr></thead><tbody>' +
-          d.Rows.map(x => '<tr><td class="nowrap">' + vnDate(x.Ngay) + '</td><td class="tiny">' + esc(x.GhiChu) + '</td><td class="right num">' + (x.Loai === 'VAY' ? money(x.SoTien) : '') + '</td><td class="right num">' + (x.Loai === 'TRU' ? money(x.SoTien) : '') + '</td><td class="right num">' + money(x.ConLai) + '</td><td>' + (x.Loai === 'VAY' ? '<span class="lnk" data-delno="' + esc(x.ID) + '">xóa</span>' : '') + '</td></tr>').join('') + '</tbody></table></div>' : '<div class="small muted mt">Chưa có khoản nợ nào.</div>') +
-        '<div class="small muted mt">Số trừ mỗi tháng nhập ở trang Tính lương → Bước 1. Số nợ chỉ giảm khi bảng lương được công bố.</div>';
-      $('#noAdd', m).onclick = () => {
-        const box2 = $('#noBox', m);
-        box2.insertAdjacentHTML('beforeend', '<div class="card flat mt" id="noForm"><div class="grid3"><div><label class="f">Số tiền vay (đ)</label><input class="i" id="noTien" inputmode="numeric"></div><div><label class="f">Ngày</label><input class="i" type="date" id="noNgay" value="' + todayStr() + '"></div><div><label class="f">Ghi chú</label><input class="i" id="noGhi" value="Nợ vay công ty"></div></div><button type="button" class="btn sm mt" id="noOk">Lưu khoản vay</button></div>');
-        $('#noTien', m).oninput = ev => { const v = ev.target.value.replace(/\D/g, ''); ev.target.value = v ? Number(v).toLocaleString('vi-VN') : ''; };
-        $('#noOk', m).onclick = async () => {
-          try { drawNo(await call('addDebt', { MaNV: e.MaNV, SoTien: $('#noTien', m).value.replace(/\D/g, ''), Ngay: $('#noNgay', m).value, GhiChu: $('#noGhi', m).value })); toast('Đã thêm khoản vay', 'ok'); } catch (er) { fail(er); }
-        };
-      };
-      // Bấm 2 lần mới xóa (không mở hộp xác nhận vì sẽ đóng mất form hồ sơ)
-      $$('[data-delno]', m).forEach(l => l.onclick = async () => {
-        if (!l.dataset.sure) { l.dataset.sure = '1'; l.textContent = 'bấm lần nữa để xóa'; l.style.color = 'var(--bad)'; return; }
-        try { drawNo(await call('deleteDebt', { ID: l.dataset.delno })); } catch (er) { fail(er); }
-      });
-    };
-    call('debts', { MaNV: e.MaNV }).then(drawNo).catch(() => {});
-  }
+  if (!isNew) debtPanel(m, e.MaNV);
   $('#tvGoiY', m).onclick = () => {
     const vao = $('[name=NgayVaoLam]', m).value;
     if (!vao) return toast('Nhập ngày vào làm trước', 'err');
@@ -1961,6 +2081,65 @@ async function aPay() {
   } catch (e) { fail(e); }
 }
 
+/** Sổ nợ 1 người: vẽ vào ô #noBox trong root (hồ sơ nhân viên hoặc trang Sổ nợ) */
+function debtPanel(m, maNV, after) {
+  const drawNo = d => {
+    const box = $('#noBox', m); if (!box) return;
+    box.className = '';
+    box.innerHTML = '<div class="row between"><span>Còn nợ: <b style="font-size:16px">' + money(d.ConNo) + 'đ</b></span><button type="button" class="btn ghost sm" id="noAdd">+ Thêm khoản vay</button></div>' +
+      (d.Rows.length ? '<div class="tbl-wrap mt"><table class="t"><thead><tr><th>Ngày</th><th>Nội dung</th><th class="right">Vay</th><th class="right">Đã trừ</th><th class="right">Còn lại</th><th></th></tr></thead><tbody>' +
+        d.Rows.map(x => '<tr><td class="nowrap">' + vnDate(x.Ngay) + '</td><td class="tiny">' + esc(x.GhiChu) + '</td><td class="right num">' + (x.Loai === 'VAY' ? money(x.SoTien) : '') + '</td><td class="right num">' + (x.Loai === 'TRU' ? money(x.SoTien) : '') + '</td><td class="right num">' + money(x.ConLai) + '</td><td>' + (x.Loai === 'VAY' ? '<span class="lnk" data-delno="' + esc(x.ID) + '">xóa</span>' : '') + '</td></tr>').join('') + '</tbody></table></div>' : '<div class="small muted mt">Chưa có khoản nợ nào.</div>') +
+      '<div class="small muted mt">Số trừ mỗi tháng nhập ở trang Tính lương → Bước 1. Số nợ chỉ giảm khi bảng lương được công bố.</div>';
+    $('#noAdd', m).onclick = () => {
+      if ($('#noForm', m)) return;
+      $('#noBox', m).insertAdjacentHTML('beforeend', '<div class="card flat mt" id="noForm"><div class="grid3"><div><label class="f">Số tiền vay (đ)</label><input class="i" id="noTien" inputmode="numeric"></div><div><label class="f">Ngày</label><input class="i" type="date" id="noNgay" value="' + todayStr() + '"></div><div><label class="f">Ghi chú</label><input class="i" id="noGhi" value="Nợ vay công ty"></div></div><button type="button" class="btn sm mt" id="noOk">Lưu khoản vay</button></div>');
+      $('#noTien', m).oninput = ev => { const v = ev.target.value.replace(/\D/g, ''); ev.target.value = v ? Number(v).toLocaleString('vi-VN') : ''; };
+      $('#noOk', m).onclick = async () => {
+        try { drawNo(await call('addDebt', { MaNV: maNV, SoTien: $('#noTien', m).value.replace(/\D/g, ''), Ngay: $('#noNgay', m).value, GhiChu: $('#noGhi', m).value })); toast('Đã thêm khoản vay', 'ok'); after && after(); } catch (er) { fail(er); }
+      };
+    };
+    // Bấm 2 lần mới xóa
+    $$('[data-delno]', m).forEach(l => l.onclick = async () => {
+      if (!l.dataset.sure) { l.dataset.sure = '1'; l.textContent = 'bấm lần nữa để xóa'; l.style.color = 'var(--bad)'; return; }
+      try { drawNo(await call('deleteDebt', { ID: l.dataset.delno })); after && after(); } catch (er) { fail(er); }
+    });
+  };
+  call('debts', { MaNV: maNV }).then(drawNo).catch(() => {});
+}
+
+/* ---- Tạm ứng, sổ nợ (cả công ty) ---- */
+let DEBT_ALL = false;
+async function aDebt() {
+  try {
+    const [r, list] = await Promise.all([call('debtList', { Thang: PAY_MONTH }), employees()]);
+    const rows = r.Rows.filter(x => DEBT_ALL || x.ConNo > 0 || x.TamUng > 0 || x.TruThangNay > 0);
+    body().innerHTML = '<div class="row wrap between mb"><h2>Tạm ứng, sổ nợ</h2><div class="row wrap"><input type="month" class="i" style="width:auto" id="dbM" value="' + PAY_MONTH + '"><button class="btn" id="dbAdd">+ Thêm khoản vay</button></div></div>' +
+      '<div class="stats"><div class="stat"><b class="num" style="font-size:20px;color:var(--bad)">' + money(r.TongConNo) + '</b><span>Tổng còn nợ công ty</span></div>' +
+      '<div class="stat"><b>' + r.Rows.filter(x => x.ConNo > 0).length + '</b><span>Người còn nợ</span></div>' +
+      '<div class="stat"><b class="num" style="font-size:20px">' + money(r.TongTamUng) + '</b><span>Tạm ứng tháng ' + vnDate(r.Thang) + '</span></div>' +
+      '<div class="stat" style="cursor:pointer" id="dbPay"><b style="font-size:16px;color:var(--pri)">Nhập tạm ứng →</b><span>ở Tính lương, Bước 1</span></div></div>' +
+      '<div class="card"><div class="row between wrap mb"><h3>Danh sách</h3><label class="chk" style="margin:0"><input type="checkbox" id="dbAll"' + (DEBT_ALL ? ' checked' : '') + '> Hiện cả người đã trả hết</label></div>' +
+      (rows.length ? '<div class="tbl-wrap"><table class="t"><thead><tr><th>Mã</th><th>Họ tên</th><th class="right">Đã vay</th><th class="right">Đã trừ lương</th><th class="right">Còn nợ</th><th class="right">Trừ tháng ' + vnDate(r.Thang) + '</th><th class="right">Tạm ứng tháng ' + vnDate(r.Thang) + '</th></tr></thead><tbody>' +
+        rows.map(x => '<tr class="click" data-ma="' + esc(x.MaNV) + '"><td><b>' + esc(x.MaNV) + '</b></td><td>' + esc(x.HoTen) + (x.NghiViec ? ' <span class="badge b-grey">nghỉ việc</span>' : '') + '</td><td class="right num">' + (x.Vay ? money(x.Vay) : '') + '</td><td class="right num">' + (x.DaTru ? money(x.DaTru) : '') + '</td><td class="right num"><b style="color:' + (x.ConNo ? 'var(--bad)' : 'var(--ok)') + '">' + money(x.ConNo) + '</b></td><td class="right num">' + (x.TruThangNay ? money(x.TruThangNay) : '') + '</td><td class="right num">' + (x.TamUng ? money(x.TamUng) : '') + '</td></tr>').join('') +
+        '</tbody></table></div>' : '<div class="empty">Không có ai đang nợ hay tạm ứng tháng này</div>') +
+      '<div class="tiny muted mt">Bấm vào 1 dòng để xem sổ nợ chi tiết, thêm khoản vay. Số nợ chỉ giảm khi bảng lương tháng đó được công bố.</div></div>';
+    const open = ma => {
+      const e = list.find(x => x.MaNV === ma) || { MaNV: ma, HoTen: ma };
+      const m = modal('Sổ nợ: ' + e.HoTen, '<div id="noBox" class="small muted">Đang tải…</div>', { wide: true });
+      debtPanel(m, ma, () => { CACHE = {}; });
+      const obs = setInterval(() => { if (!document.body.contains(m)) { clearInterval(obs); if (CUR === 'admin' && ADMIN_SUB === 'debt') aDebt(); } }, 400);
+    };
+    $$('#adBody tr[data-ma]').forEach(tr => tr.onclick = () => open(tr.dataset.ma));
+    $('#dbM').onchange = e => { PAY_MONTH = e.target.value || PAY_MONTH; aDebt(); };
+    $('#dbAll').onchange = e => { DEBT_ALL = e.target.checked; aDebt(); };
+    $('#dbPay').onclick = () => go('admin', 'pay');
+    $('#dbAdd').onclick = () => {
+      const m = modal('Thêm khoản vay', '<label class="f">Nhân viên</label><select class="i" id="dbWho">' + list.filter(x => x.TrangThai !== 'NGHIVIEC').map(x => '<option value="' + esc(x.MaNV) + '">' + esc(x.MaNV + ' - ' + x.HoTen) + '</option>').join('') + '</select><button class="btn block mt2" id="dbGo">Tiếp tục</button>');
+      $('#dbGo', m).onclick = () => { const ma = $('#dbWho', m).value; closeModal(); open(ma); };
+    };
+  } catch (e) { fail(e); }
+}
+
 /* ---- Thông báo (quản lý gửi) ---- */
 const TB_MAU = [
   ['Lịch nghỉ lễ', 'Lịch nghỉ lễ', 'Công ty thông báo lịch nghỉ lễ từ ngày … đến hết ngày …, đi làm lại ngày …\nAi phải trực / làm ngày lễ sẽ được chỉ huy trưởng đăng ký tăng ca (×3).'],
@@ -2042,18 +2221,21 @@ function dtLabel(dt, branches, act) {
 let SET_SUB = 'gen';
 async function aSet() {
   NAV++;
-  body().innerHTML = '<div class="chips" id="sTabs">' + [['gen', 'Chung & lương'], ['role', 'Phân quyền'], ['sch', 'Lịch làm việc'], ['br', 'Chi nhánh / GPS'], ['hol', 'Ngày lễ']].map(t => '<button class="chip ' + (t[0] === SET_SUB ? 'on' : '') + '" data-s="' + t[0] + '">' + t[1] + '</button>').join('') + '</div><div id="sBody"><div class="empty">Đang tải…</div></div>';
+  body().innerHTML = '<div class="chips" id="sTabs">' + [['gen', 'Chung & lương'], ['sch', 'Lịch làm việc'], ['br', 'Chi nhánh / GPS'], ['hol', 'Ngày lễ']].map(t => '<button class="chip ' + (t[0] === SET_SUB ? 'on' : '') + '" data-s="' + t[0] + '">' + t[1] + '</button>').join('') + '</div><div id="sBody"><div class="empty">Đang tải…</div></div>';
   $$('#sTabs .chip').forEach(c => c.onclick = () => { SET_SUB = c.dataset.s; aSet(); });
-  ({ gen: sGen, role: sRole, sch: sSched, br: sBranch, hol: sHoliday })[SET_SUB]();
+  if (SET_SUB === 'role') SET_SUB = 'gen';
+  ({ gen: sGen, sch: sSched, br: sBranch, hol: sHoliday })[SET_SUB]();
 }
 
 let ROLE_Q = '';
-async function sRole() {
+function aRole() { return sRole(body(), true); }
+async function sRole(target, page) {
+  const BOX = target || $('#sBody');
   try {
     const list = (await employees(true)).filter(e => e.TrangThai !== 'NGHIVIEC');
     const cnt = k => list.filter(e => vaiTro(e) === k).length;
     const ic = { NV: '👷', DIEUHANH: '🦺', ADMIN: '🔑' };
-    $('#sBody').innerHTML = '<div class="grid3" style="gap:12px;margin-bottom:14px">' + VAITRO_OPTS.map(o =>
+    BOX.innerHTML = (page ? '<div class="row between mb"><h2>Phân quyền</h2></div>' : '') + '<div class="grid3" style="gap:12px;margin-bottom:14px">' + VAITRO_OPTS.map(o =>
       '<div class="role-card card" style="margin:0"><h3>' + ic[o[0]] + ' ' + esc(o[1]) + ' <span class="badge b-grey">' + cnt(o[0]) + ' người</span></h3><div class="small muted mt">' + esc(VAITRO_HELP[o[0]]) + '</div></div>').join('') + '</div>' +
       '<div class="card"><div class="row wrap between mb"><h3>Quyền từng người</h3><input class="i" id="roQ" placeholder="Tìm tên / mã / chức vụ" style="max-width:240px" value="' + esc(ROLE_Q) + '"></div>' +
       '<div class="tbl-wrap"><table class="t"><thead><tr><th>Mã</th><th>Họ tên</th><th>Chức vụ</th><th style="min-width:230px">Quyền</th></tr></thead><tbody id="roT"></tbody></table></div>' +
@@ -2066,7 +2248,7 @@ async function sRole() {
       $$('#roT [data-role]').forEach(sl => sl.onchange = async () => {
         const e = list.find(x => x.MaNV === sl.dataset.role), old = vaiTro(e);
         if (sl.value === 'ADMIN' && !(await confirmBox('Cho ' + e.HoTen + ' quyền Quản trị? Người này sẽ xem được lương của mọi người và sửa được mọi thứ.', 'Đồng ý'))) { sl.value = old; return; }
-        try { await call('setRole', { MaNV: e.MaNV, VaiTro: sl.value }); e.VaiTro = sl.value; e.QuyenTangCa = sl.value === 'DIEUHANH' ? 'ALL' : (sl.value === 'NV' ? '' : e.QuyenTangCa); toast('Đã đổi quyền ' + e.HoTen + ' → ' + VAITRO_TEN[sl.value], 'ok'); EMP_CACHE = null; sRole(); }
+        try { await call('setRole', { MaNV: e.MaNV, VaiTro: sl.value }); e.VaiTro = sl.value; e.QuyenTangCa = sl.value === 'DIEUHANH' ? 'ALL' : (sl.value === 'NV' ? '' : e.QuyenTangCa); toast('Đã đổi quyền ' + e.HoTen + ' → ' + VAITRO_TEN[sl.value], 'ok'); EMP_CACHE = null; sRole(target, page); }
         catch (er) { fail(er); sl.value = old; }
       });
     };
