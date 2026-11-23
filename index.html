@@ -1201,7 +1201,8 @@ function empForm(e, branches) {
     '<label class="chk"><input type="checkbox" name="XacNhanSTK"' + (e.XacNhanSTK === 'CO' ? ' checked' : '') + '> <span>Đã kiểm tra, <b>xác nhận số tài khoản</b> (nhân viên không tự sửa được nữa)</span></label>' +
     '<label class="chk"><input type="checkbox" name="NghiNgang"' + (e.NghiNgang === 'CO' ? ' checked' : '') + '> <span><b>Nghỉ ngang</b> (không báo trước) – tháng cuối gợi ý trừ thêm phần BH công ty đã đóng, quản lý duyệt ở trang Tính lương</span></label>' +
     (isNew ? '' : '<h3 class="mt2">Sổ nợ vay công ty</h3><div id="noBox" class="small muted">Đang tải…</div>') +
-    '<div class="row wrap mt2">' + (isNew ? '' : '<button class="btn light" id="eReset">Đặt lại mật khẩu</button>') + '<span class="grow"></span><button class="btn" id="eSave">Lưu</button></div>', { wide: true });
+    '<div class="row wrap mt2">' + (isNew ? '' : '<button class="btn light" id="eReset">Đặt lại mật khẩu</button><button class="btn light" id="eDel" style="color:var(--bad)">Xóa nhân viên</button>') + '<span class="grow"></span><button class="btn" id="eSave">Lưu</button></div>' +
+    (isNew ? '' : '<div class="tiny muted mt">Xóa nhân viên: chỉ dùng cho tài khoản nhập thử / nhập nhầm (xóa luôn chấm công, đơn từ, sổ nợ). Người đã có bảng lương công bố thì không xóa được – chuyển Trạng thái sang "Nghỉ việc".</div>'), { wide: true });
   const fmtMoneyInput = el => { const v = String(el.value).replace(/\D/g, ''); el.value = v ? Number(v).toLocaleString('vi-VN') : ''; };
   $$('[data-money]', m).forEach(el => { fmtMoneyInput(el); el.oninput = () => fmtMoneyInput(el); });
   const lab = () => { $('#mlLabel', m).textContent = { THANG: 'Lương cơ bản / tháng', NGAY: 'Đơn giá 1 ngày', GIO: 'Đơn giá 1 giờ' }[$('[name=LoaiLuong]', m).value]; };
@@ -1254,6 +1255,18 @@ function empForm(e, branches) {
     try {
       await call('saveEmployee', f); closeModal();
       toast(isNew ? 'Đã thêm. Mật khẩu đăng nhập lần đầu là mật khẩu mặc định trong Cài đặt' : 'Đã lưu', 'ok');
+      aEmp();
+    } catch (err) { fail(err); }
+  };
+  // Xóa: bấm 1 lần để "lên cò", bấm lần 2 mở hộp xác nhận cuối
+  if (!isNew) $('#eDel', m).onclick = async ev => {
+    const b = ev.currentTarget;
+    if (!b.dataset.sure) { b.dataset.sure = '1'; b.textContent = 'Bấm lần nữa để xóa'; b.style.background = 'var(--bad-soft)'; return; }
+    if (!(await confirmBox('XÓA VĨNH VIỄN ' + e.HoTen + ' (' + e.MaNV + ') cùng toàn bộ chấm công, đơn từ, khuôn mặt, sổ nợ, bảng lương chưa công bố? Không khôi phục được.', 'Xóa vĩnh viễn'))) return;
+    try {
+      const r = await call('deleteEmployee', { MaNV: e.MaNV });
+      const d = r.DaXoa || {};
+      toast('Đã xóa ' + r.HoTen + ' (' + r.MaNV + ')' + (d.ChamCong ? ', ' + d.ChamCong + ' dòng chấm công' : '') + (d.DonTu ? ', ' + d.DonTu + ' đơn' : ''), 'ok');
       aEmp();
     } catch (err) { fail(err); }
   };
