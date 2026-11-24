@@ -70,7 +70,7 @@ table{width:100%;border-collapse:collapse;font-size:13px;margin-top:10px}th,td{t
       <option value="1">Có (giống app thật, tối đa 3 lần)</option>
       <option value="0">Không (đo máy chủ thô)</option></select></div>
     <div><label>Kèm ảnh khuôn mặt</label><select id="photo">
-      <option value="1">Có (giống thật, lưu ảnh vào Drive)</option>
+      <option value="1">Có (gửi ngầm sau khi chấm công, giống app thật)</option>
       <option value="0">Không</option></select></div>
   </div>
   <div class="row" style="margin-top:12px"><div style="flex:none"><button id="bFire" disabled>Bắn!</button></div>
@@ -98,7 +98,7 @@ const BUSY = /chờ khóa|lock timeout|too many|quá nhiều|simultaneous|servic
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 // Khuôn mặt giả (cố định) – dùng cho cả đăng ký và chấm công nên luôn khớp
 const FACE = Array.from({ length: 128 }, (_, i) => Math.round(Math.sin(i * 1.7) * 1000) / 10000);
-let PHOTO = '';
+let PHOTO = '', PHOTOS = [];
 (function () { const c = document.createElement('canvas'); c.width = 360; c.height = 480; const g = c.getContext('2d');
   for (let i = 0; i < 400; i++) { g.fillStyle = 'hsl(' + (i * 37 % 360) + ',40%,' + (30 + i % 50) + '%)'; g.fillRect(Math.random() * 360, Math.random() * 480, 30, 30); }
   PHOTO = c.toDataURL('image/jpeg', 0.72); })();
@@ -191,14 +191,14 @@ $('#bFire').onclick = async () => {
   if (!confirm('Bắn ' + list.length + ' lượt chấm công ' + loai + (spread ? ' rải trong ' + spread / 1000 + ' giây' : ' cùng 1 lúc') + ' vào app thật?')) return;
   $('#bFire').disabled = true; $('#result').innerHTML = '';
   log('Bắt đầu: ' + list.length + ' lượt ' + loai);
-  const T0 = performance.now(); let done = 0;
+  const T0 = performance.now(); let done = 0; PHOTOS = [];
   const res = await Promise.all(list.map(async (ma, i) => {
     const delay = spread ? Math.random() * spread : 0;
     await sleep(delay);
     const sent = performance.now() - T0;
     const a = st.accts[ma];
     const lo = loai === 'VAO' && a.vao ? 'RA' : loai;
-    const body = Object.assign({ __perf: true, Loai: lo, ViDo: st.site.lat, KinhDo: st.site.lng, DoChinhXac: 10, MoTa: FACE, SongDong: true }, withPhoto ? { Anh: PHOTO } : {});
+    const body = { __perf: true, Loai: lo, ViDo: st.site.lat, KinhDo: st.site.lng, DoChinhXac: 10, MoTa: FACE, SongDong: true }; // ảnh gửi sau như app thật
     const t1 = performance.now();
     let r, lan = 0;
     for (;;) {
@@ -209,12 +209,27 @@ $('#bFire').onclick = async () => {
     const tLast = r._t;
     r._t = performance.now() - t1;
     if (r.ok) a.vao = true;
+    if (r.ok && withPhoto && r.data && r.data.Ban) PHOTOS.push((async () => {
+      for (let k = 0; k < 3; k++) {
+        const x = await api('attachPhoto', a.tok, { Loai: lo, ID: r.data.Ban.ID, Ngay: r.data.Ban.Ngay, Anh: PHOTO });
+        if (x.ok) return true;
+        if (!BUSY.test(x.error || '') && !/kết nối|120 giây/.test(x.error || '')) return false;
+        await sleep(2000 * (k + 1));
+      }
+      return false;
+    })());
     done++; $('#pFire').style.width = Math.round(done / list.length * 100) + '%';
     return { ma: ma, ok: r.ok, err: r.error || '', t: r._t, s: r.ms, sent: sent, end: performance.now() - T0, lan: lan, perf: r.perf, ver: r.ver, mang: r.ms != null ? tLast - r.ms : null };
   }));
   save();
   const total = (performance.now() - T0) / 1000;
   report(res, total, loai, spread);
+  if (PHOTOS.length) {
+    $('#photoMsg').textContent = 'Đang chờ gửi ảnh ngầm (' + PHOTOS.length + ' ảnh)…';
+    const kq = await Promise.all(PHOTOS);
+    const okp = kq.filter(Boolean).length;
+    $('#photoMsg').innerHTML = 'Ảnh gửi ngầm sau khi chấm công: <b style="color:' + (okp === kq.length ? 'var(--ok)' : 'var(--bad)') + '">' + okp + '/' + kq.length + ' thành công</b> (xong sau ' + ((performance.now() - T0) / 1000).toFixed(1) + ' giây kể từ lúc bắn – không tính vào thời gian chờ của nhân viên).';
+  }
   log('Xong sau ' + total.toFixed(1) + ' giây');
   $('#bFire').disabled = false;
 };
@@ -253,7 +268,7 @@ function report(res, total, loai, spread) {
   res.forEach(r => { const b = Math.min(secs - 1, Math.floor(r.end / 1000)); (r.ok ? bins : ebins)[b]++; });
   const mxb = Math.max(1, ...bins.map((x, i) => x + ebins[i]));
   $('#result').innerHTML =
-    '<div class="verdict ' + cls + '">' + v + '</div>' +
+    '<div class="verdict ' + cls + '">' + v + '</div>' + '<div class="small" id="photoMsg" style="margin-top:8px"></div>' +
     '<div class="stats">' +
       '<div class="stat"><b style="color:var(--ok)">' + ok.length + '</b><span>Thành công / ' + res.length + ' (' + loai + ')</span></div>' +
       '<div class="stat"><b style="color:' + (bad.length ? 'var(--bad)' : 'inherit') + '">' + bad.length + '</b><span>Lỗi</span></div>' +
