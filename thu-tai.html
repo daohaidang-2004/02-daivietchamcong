@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Thử tải app chấm công</title>
+<style>
+:root{--pri:#0e7c74;--pri2:#0a5f58;--soft:#e1f2ef;--bg:#f4f6f6;--ink:#13201f;--muted:#667574;--line:#e4e9e9;--ok:#14915a;--bad:#cf2e2e;--warn:#c77700}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:900px;margin:0 auto;padding:18px 14px 60px}
+h1{font-size:22px;margin:4px 0 4px}h2{font-size:17px;margin:0 0 8px}
+.card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px;margin:14px 0}
+.muted{color:var(--muted)}.small{font-size:13px}
+label{display:block;font-size:13px;color:var(--muted);margin:10px 0 4px}
+input,select{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:10px;font:inherit;background:#fff}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}.row>div{flex:1;min-width:150px}
+button{border:0;border-radius:10px;padding:10px 16px;background:var(--pri);color:#fff;font:inherit;font-weight:600;cursor:pointer;min-height:42px}
+button:hover{background:var(--pri2)}button:disabled{opacity:.5;cursor:default}
+button.light{background:#fff;color:var(--ink);border:1px solid var(--line)}button.bad{background:var(--bad)}
+.bar{height:10px;background:#e9eeee;border-radius:5px;overflow:hidden;margin-top:8px}.bar i{display:block;height:100%;background:var(--pri);width:0}
+.log{font:12px/1.5 ui-monospace,Menlo,Consolas,monospace;background:#0f1b1a;color:#cfe;border-radius:10px;padding:10px;max-height:220px;overflow:auto;white-space:pre-wrap;margin-top:10px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:10px}
+@media(max-width:600px){.stats{grid-template-columns:repeat(2,1fr)}}
+.stat{border:1px solid var(--line);border-radius:12px;padding:10px 12px}.stat b{display:block;font-size:22px}.stat span{font-size:12px;color:var(--muted)}
+.verdict{padding:12px 14px;border-radius:12px;font-weight:600;margin-top:12px}
+.v-ok{background:#e5f6ee;color:var(--ok)}.v-warn{background:#fff3df;color:var(--warn)}.v-bad{background:#fdeaea;color:var(--bad)}
+table{width:100%;border-collapse:collapse;font-size:13px;margin-top:10px}th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}th{color:var(--muted);font-weight:600}
+.hist{display:flex;align-items:flex-end;gap:2px;height:90px;margin-top:10px;border-bottom:1px solid var(--line)}
+.hist i{flex:1;background:var(--pri);border-radius:3px 3px 0 0;min-height:1px}
+.hist i.e{background:var(--bad)}
+.step{display:inline-block;width:24px;height:24px;border-radius:50%;background:var(--pri);color:#fff;text-align:center;line-height:24px;font-size:13px;margin-right:6px}
+</style>
+</head>
+<body>
+<main>
+<h1>Thử tải: nhiều người chấm công cùng lúc</h1>
+<div class="muted small">Trang này tạo tài khoản thử <b>TT001, TT002…</b>, cho tất cả bấm chấm công cùng lúc vào app thật, đo thời gian chờ, rồi xóa sạch. Không đụng tới nhân viên thật và không sửa code app.<br>
+<b>Nên chạy buổi tối</b>, lúc không ai chấm công, để không làm chậm người thật.</div>
+
+<div class="card">
+  <h2><span class="step">1</span>Đăng nhập quản trị</h2>
+  <label>Địa chỉ app (.../exec)</label>
+  <input id="url" value="https://script.google.com/macros/s/AKfycbwTOLbadnnYZcG4N1Affk0jBYyMfmZ6UqxZ-3p0pu52zO5B8JgXlzYN5ALQR0_8nSgB6w/exec">
+  <div class="row"><div><label>Mã quản trị</label><input id="am" value="ADMIN" autocapitalize="characters"></div>
+  <div><label>Mật khẩu</label><input id="ap" type="password"></div>
+  <div style="flex:none"><button id="bLogin">Đăng nhập</button></div></div>
+  <div class="small muted" id="loginMsg" style="margin-top:8px"></div>
+</div>
+
+<div class="card">
+  <h2><span class="step">2</span>Tạo tài khoản thử</h2>
+  <div class="row"><div><label>Số tài khoản thử</label><input id="n" type="number" min="5" max="150" value="100"></div>
+  <div style="flex:none"><button id="bSetup" disabled>Tạo tài khoản thử</button></div></div>
+  <div class="small muted" style="margin-top:8px">Mỗi tài khoản: tạo hồ sơ → đăng nhập → đăng ký khuôn mặt giả → quản lý duyệt. 100 người mất khoảng 3–6 phút (làm 1 lần, lần sau thử lại không phải tạo nữa).</div>
+  <div class="bar"><i id="pSetup"></i></div>
+  <div class="small" id="setupMsg" style="margin-top:6px"></div>
+</div>
+
+<div class="card">
+  <h2><span class="step">3</span>Bắn chấm công</h2>
+  <div class="row">
+    <div><label>Bao nhiêu người</label><input id="k" type="number" min="1" value="100"></div>
+    <div><label>Bấm trong khoảng</label><select id="spread">
+      <option value="0">Cùng 1 lúc (trường hợp xấu nhất)</option>
+      <option value="10">Rải trong 10 giây</option>
+      <option value="30">Rải trong 30 giây</option>
+      <option value="120">Rải trong 2 phút (gần thực tế)</option></select></div>
+    <div><label>Kèm ảnh khuôn mặt</label><select id="photo">
+      <option value="1">Có (giống thật, lưu ảnh vào Drive)</option>
+      <option value="0">Không</option></select></div>
+  </div>
+  <div class="row" style="margin-top:12px"><div style="flex:none"><button id="bFire" disabled>Bắn!</button></div>
+    <div class="small muted">Lần đầu = <b>chấm công VÀO</b>. Các lần sau = <b>chấm công RA</b> (cập nhật giờ ra, bắn lặp lại bao nhiêu lần cũng được). Cả hai đều xếp hàng ghi vào Sheet như người thật.</div></div>
+  <div class="bar"><i id="pFire"></i></div>
+  <div id="result"></div>
+</div>
+
+<div class="card">
+  <h2><span class="step">4</span>Dọn dẹp</h2>
+  <div class="small muted">Xóa hết tài khoản TT… cùng chấm công, khuôn mặt, phiên đăng nhập của chúng. Ảnh thử (nếu có) nằm trong thư mục "Ảnh chấm công" trên Drive, tên bắt đầu bằng <b>TT</b>: tìm "TT0" trong Drive để xóa tay nếu muốn.</div>
+  <div class="row" style="margin-top:10px"><div style="flex:none"><button class="bad" id="bClean" disabled>Xóa toàn bộ dữ liệu thử</button></div></div>
+  <div class="small" id="cleanMsg" style="margin-top:8px"></div>
+</div>
+
+<div class="log" id="log"></div>
+</main>
+<script>
+const $ = s => document.querySelector(s);
+const pad3 = i => String(i).padStart(3, '0');
+const st = JSON.parse(localStorage.getItem('tt_state') || '{}'); // {admin, accts:{TT001:{tok, vao}}, n}
+const save = () => localStorage.setItem('tt_state', JSON.stringify(st));
+const log = m => { const l = $('#log'); l.textContent += '[' + new Date().toTimeString().slice(0, 8) + '] ' + m + '\n'; l.scrollTop = 1e9; };
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+// Khuôn mặt giả (cố định) – dùng cho cả đăng ký và chấm công nên luôn khớp
+const FACE = Array.from({ length: 128 }, (_, i) => Math.round(Math.sin(i * 1.7) * 1000) / 10000);
+let PHOTO = '';
+(function () { const c = document.createElement('canvas'); c.width = 360; c.height = 480; const g = c.getContext('2d');
+  for (let i = 0; i < 400; i++) { g.fillStyle = 'hsl(' + (i * 37 % 360) + ',40%,' + (30 + i % 50) + '%)'; g.fillRect(Math.random() * 360, Math.random() * 480, 30, 30); }
+  PHOTO = c.toDataURL('image/jpeg', 0.72); })();
+
+if (st.url) $('#url').value = st.url;
+
+async function api(a, t, p, timeoutMs) {
+  const ctl = new AbortController(); const to = setTimeout(() => ctl.abort(), timeoutMs || 120000);
+  const t0 = performance.now();
+  try {
+    const res = await fetch($('#url').value.trim(), { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ a: a, t: t, p: p || {} }), signal: ctl.signal });
+    const txt = await res.text();
+    let r; try { r = JSON.parse(txt); } catch (e) { r = { ok: false, error: 'Google trả trang lỗi (thường là quá tải): ' + txt.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').slice(0, 140) }; }
+    r._t = performance.now() - t0; return r;
+  } catch (e) {
+    return { ok: false, error: e.name === 'AbortError' ? 'Quá 120 giây không phản hồi' : 'Mất kết nối / bị chặn: ' + e.message, _t: performance.now() - t0 };
+  } finally { clearTimeout(to); }
+}
+const must = r => { if (!r.ok) throw new Error(r.error); return r.data; };
+async function pool(items, conc, fn, onDone) {
+  let i = 0, done = 0;
+  const worker = async () => { while (i < items.length) { const x = items[i++]; await fn(x); onDone && onDone(++done); } };
+  await Promise.all(Array.from({ length: Math.min(conc, items.length) }, worker));
+}
+function refreshButtons() {
+  const n = Object.keys(st.accts || {}).filter(k => st.accts[k].tok).length;
+  $('#bSetup').disabled = !st.admin; $('#bClean').disabled = !st.admin;
+  $('#bFire').disabled = !n;
+  if (n) $('#setupMsg').innerHTML = '<b style="color:var(--ok)">Có sẵn ' + n + ' tài khoản thử.</b>';
+  if (n) $('#k').max = n;
+}
+
+$('#bLogin').onclick = async () => {
+  st.url = $('#url').value.trim(); save();
+  $('#loginMsg').textContent = 'Đang đăng nhập…';
+  const r = await api('login', null, { MaNV: $('#am').value, MatKhau: $('#ap').value });
+  if (!r.ok) { $('#loginMsg').innerHTML = '<span style="color:var(--bad)">' + r.error + '</span>'; return; }
+  if (r.data.user.VaiTro !== 'ADMIN') { $('#loginMsg').innerHTML = '<span style="color:var(--bad)">Tài khoản này không phải Quản trị</span>'; return; }
+  st.admin = r.data.token; save();
+  $('#ap').value = '';
+  $('#loginMsg').innerHTML = '<b style="color:var(--ok)">Đã đăng nhập: ' + r.data.user.HoTen + '</b> (' + (r._t / 1000).toFixed(1) + ' giây)';
+  log('Đăng nhập quản trị xong');
+  refreshButtons();
+};
+
+$('#bSetup').onclick = async () => {
+  const N = Math.max(5, Math.min(150, Number($('#n').value) || 100));
+  $('#bSetup').disabled = true; $('#bFire').disabled = true;
+  try {
+    const S = must(await api('getSettings', st.admin)).Values;
+    const br = must(await api('listBranches', st.admin)).filter(b => b.HoatDong !== 'KHONG');
+    if (!br.length) throw new Error('Chưa có công trình nào đang dùng');
+    st.site = { id: br[0].ID, lat: Number(String(br[0].ViDo).replace(',', '.')), lng: Number(String(br[0].KinhDo).replace(',', '.')), ten: br[0].TenChiNhanh };
+    st.pw = S.MatKhauMacDinh; st.accts = st.accts || {}; save();
+    log('Công trình dùng để thử: ' + st.site.ten + ' (' + st.site.lat + ', ' + st.site.lng + ')');
+    const codes = Array.from({ length: N }, (_, i) => 'TT' + pad3(i + 1));
+    let steps = 0; const total = N * 4;
+    const bump = () => { steps++; $('#pSetup').style.width = Math.round(steps / total * 100) + '%'; $('#setupMsg').textContent = 'Đang tạo… ' + steps + '/' + total + ' bước'; };
+    // 1. Hồ sơ
+    await pool(codes, 4, async ma => {
+      const r = await api('saveEmployee', st.admin, { isNew: true, MaNV: ma, HoTen: 'Thử tải ' + ma.slice(2), ChucVu: 'THU TAI', LoaiLuong: 'THANG', MucLuong: '1000000', ChiNhanh: st.site.id, VaiTro: 'NV', TrangThai: 'DANGLAM' });
+      if (!r.ok && !/đã tồn tại/.test(r.error)) log(ma + ' tạo hồ sơ lỗi: ' + r.error);
+    }, bump);
+    // 2. Đăng nhập lấy phiên
+    await pool(codes, 4, async ma => {
+      if (st.accts[ma] && st.accts[ma].tok) return;
+      const r = await api('login', null, { MaNV: ma, MatKhau: st.pw });
+      if (r.ok) { st.accts[ma] = { tok: r.data.token, vao: false }; save(); } else log(ma + ' đăng nhập lỗi: ' + r.error);
+    }, bump);
+    // 3. Đăng ký khuôn mặt giả
+    await pool(codes, 4, async ma => {
+      const a = st.accts[ma]; if (!a) return;
+      const r = await api('registerFace', a.tok, { MoTa: [FACE, FACE], SongDong: true });
+      if (!r.ok && !/đã được duyệt/.test(r.error)) log(ma + ' đăng ký mặt lỗi: ' + r.error);
+    }, bump);
+    // 4. Quản lý duyệt
+    await pool(codes, 4, async ma => {
+      const r = await api('decideFace', st.admin, { MaNV: ma, TrangThai: 'DUYET' });
+      if (!r.ok) log(ma + ' duyệt mặt lỗi: ' + r.error);
+    }, bump);
+    log('Tạo xong ' + Object.keys(st.accts).length + ' tài khoản thử');
+  } catch (e) { log('LỖI: ' + e.message); $('#setupMsg').innerHTML = '<span style="color:var(--bad)">' + e.message + '</span>'; }
+  refreshButtons();
+};
+
+$('#bFire').onclick = async () => {
+  const list = Object.keys(st.accts).filter(k => st.accts[k].tok).sort().slice(0, Math.max(1, Number($('#k').value) || 100));
+  const spread = Number($('#spread').value) * 1000, withPhoto = $('#photo').value === '1';
+  const loai = list.every(k => st.accts[k].vao) ? 'RA' : 'VAO';
+  if (!confirm('Bắn ' + list.length + ' lượt chấm công ' + loai + (spread ? ' rải trong ' + spread / 1000 + ' giây' : ' cùng 1 lúc') + ' vào app thật?')) return;
+  $('#bFire').disabled = true; $('#result').innerHTML = '';
+  log('Bắt đầu: ' + list.length + ' lượt ' + loai);
+  const T0 = performance.now(); let done = 0;
+  const res = await Promise.all(list.map(async (ma, i) => {
+    const delay = spread ? Math.random() * spread : 0;
+    await sleep(delay);
+    const sent = performance.now() - T0;
+    const a = st.accts[ma];
+    const lo = loai === 'VAO' && a.vao ? 'RA' : loai;
+    const r = await api('checkIn', a.tok, Object.assign({ Loai: lo, ViDo: st.site.lat, KinhDo: st.site.lng, DoChinhXac: 10, MoTa: FACE, SongDong: true }, withPhoto ? { Anh: PHOTO } : {}));
+    if (r.ok) a.vao = true;
+    done++; $('#pFire').style.width = Math.round(done / list.length * 100) + '%';
+    return { ma: ma, ok: r.ok, err: r.error || '', t: r._t, s: r.ms, sent: sent, end: performance.now() - T0 };
+  }));
+  save();
+  const total = (performance.now() - T0) / 1000;
+  report(res, total, loai, spread);
+  log('Xong sau ' + total.toFixed(1) + ' giây');
+  $('#bFire').disabled = false;
+};
+
+function pct(a, p) { if (!a.length) return 0; const s = a.slice().sort((x, y) => x - y); return s[Math.min(s.length - 1, Math.floor(p / 100 * s.length))]; }
+function report(res, total, loai, spread) {
+  const ok = res.filter(r => r.ok), bad = res.filter(r => !r.ok);
+  const ts = ok.map(r => r.t / 1000);
+  const ss = ok.filter(r => r.s != null).map(r => r.s / 1000);
+  const errs = {};
+  bad.forEach(r => { const k = r.err.replace(/TT\d+/g, 'TT…').slice(0, 120); errs[k] = (errs[k] || 0) + 1; });
+  const p90 = pct(ts, 90), mx = Math.max(0, ...ts);
+  let v, cls;
+  if (!bad.length && p90 <= 8) { v = '✅ Chịu tốt: ' + res.length + '/' + res.length + ' lượt thành công, 90% người chờ không quá ' + p90.toFixed(1) + ' giây.'; cls = 'v-ok'; }
+  else if (bad.length <= res.length * 0.05 && p90 <= 20) { v = '⚠ Tạm được: ' + bad.length + ' lượt lỗi, 90% người chờ ≤ ' + p90.toFixed(1) + ' giây. Nên thêm "tự thử lại" trong app.'; cls = 'v-warn'; }
+  else { v = '❌ Quá tải: ' + bad.length + '/' + res.length + ' lượt lỗi, người chậm nhất chờ ' + mx.toFixed(1) + ' giây. Cần sửa trước khi dùng thật.'; cls = 'v-bad'; }
+  // Biểu đồ: số lượt hoàn thành theo từng giây
+  const secs = Math.max(1, Math.ceil(total)), bins = Array(secs).fill(0), ebins = Array(secs).fill(0);
+  res.forEach(r => { const b = Math.min(secs - 1, Math.floor(r.end / 1000)); (r.ok ? bins : ebins)[b]++; });
+  const mxb = Math.max(1, ...bins.map((x, i) => x + ebins[i]));
+  $('#result').innerHTML =
+    '<div class="verdict ' + cls + '">' + v + '</div>' +
+    '<div class="stats">' +
+      '<div class="stat"><b style="color:var(--ok)">' + ok.length + '</b><span>Thành công / ' + res.length + ' (' + loai + ')</span></div>' +
+      '<div class="stat"><b style="color:' + (bad.length ? 'var(--bad)' : 'inherit') + '">' + bad.length + '</b><span>Lỗi</span></div>' +
+      '<div class="stat"><b>' + pct(ts, 50).toFixed(1) + 's</b><span>Người bình thường chờ (trung vị)</span></div>' +
+      '<div class="stat"><b>' + p90.toFixed(1) + 's</b><span>90% người chờ không quá</span></div>' +
+      '<div class="stat"><b>' + mx.toFixed(1) + 's</b><span>Người chờ lâu nhất</span></div>' +
+      '<div class="stat"><b>' + (ss.length ? (ss.reduce((a, b) => a + b, 0) / ss.length).toFixed(1) : '–') + 's</b><span>Máy chủ xử lý TB / lượt</span></div>' +
+      '<div class="stat"><b>' + total.toFixed(1) + 's</b><span>Tổng thời gian ' + (spread ? '(rải ' + spread / 1000 + 's)' : '') + '</span></div>' +
+      '<div class="stat"><b>' + (ok.length / total).toFixed(1) + '</b><span>Lượt xong / giây</span></div>' +
+    '</div>' +
+    '<div class="small muted" style="margin-top:12px">Số lượt xong theo từng giây (xanh = thành công, đỏ = lỗi):</div>' +
+    '<div class="hist">' + bins.map((x, i) => '<div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:100%">' +
+      (ebins[i] ? '<i class="e" style="height:' + ebins[i] / mxb * 100 + '%"></i>' : '') + '<i style="height:' + x / mxb * 100 + '%"></i></div>').join('') + '</div>' +
+    (Object.keys(errs).length ? '<table><thead><tr><th>Lỗi gặp phải</th><th>Số lượt</th></tr></thead><tbody>' + Object.keys(errs).map(k => '<tr><td>' + k.replace(/</g, '&lt;') + '</td><td>' + errs[k] + '</td></tr>').join('') + '</tbody></table>' : '') +
+    '<div class="small muted" style="margin-top:10px">Chụp màn hình phần này gửi Claude để phân tích.</div>';
+}
+
+$('#bClean').onclick = async () => {
+  if (!confirm('Xóa toàn bộ tài khoản TT… và dữ liệu thử của chúng?')) return;
+  $('#bClean').disabled = true; $('#cleanMsg').textContent = 'Đang tìm tài khoản thử…';
+  try {
+    const all = must(await api('listEmployees', st.admin));
+    const codes = all.filter(e => /^TT\d{3}$/.test(e.MaNV) && e.ChucVu === 'THU TAI').map(e => e.MaNV);
+    let xoa = 0;
+    for (let i = 0; i < codes.length; i += 25) {
+      const r = must(await api('deleteEmployees', st.admin, { MaNV: codes.slice(i, i + 25) }));
+      xoa += r.DaXoa.length;
+      r.BoQua.forEach(b => log('Không xóa ' + b.MaNV + ': ' + b.LyDo));
+      $('#cleanMsg').textContent = 'Đã xóa ' + xoa + '/' + codes.length + '…';
+    }
+    st.accts = {}; save();
+    $('#cleanMsg').innerHTML = '<b style="color:var(--ok)">Đã xóa ' + xoa + ' tài khoản thử và dữ liệu của chúng.</b>';
+    log('Dọn dẹp xong: ' + xoa + ' tài khoản');
+  } catch (e) { $('#cleanMsg').innerHTML = '<span style="color:var(--bad)">' + e.message + '</span>'; }
+  refreshButtons();
+};
+refreshButtons();
+if (st.admin) $('#loginMsg').innerHTML = '<span class="muted">Đã đăng nhập từ lần trước (đăng nhập lại nếu báo lỗi phiên).</span>';
+</script>
+</body>
+</html>
