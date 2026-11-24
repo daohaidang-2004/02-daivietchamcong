@@ -583,9 +583,13 @@ async function rawCall(action, payload, keepNav, full) {
         return full ? { ok: true, data: kq } : kq;
       }
       const busy = BUSY_ERR.test(m), net = NET_ERR.test(m) && (NET_RETRY.indexOf(action) >= 0 || READS.indexOf(action) >= 0);
-      if (lan >= 3 || !(busy || net)) throw e;
+      // Chờ khóa quá lâu: gửi lại sau 1–3 giây (tối đa 3 lần). Google từ chối vì quá đông / mất kết nối:
+      // chờ lâu dần, ngẫu nhiên (3–8s, 5–15s, 10–20s, 10–20s, 10–20s) để các lượt gửi lại không ập vào cùng lúc
+      const lag = (net || /quá tải|Google trả trang lỗi|too many|simultaneous|service invoked/i.test(m)) ? [[3, 8], [5, 15], [10, 20], [10, 20], [10, 20]] : null;
+      if (!(busy || net) || lan >= (lag ? lag.length : 3)) throw e;
       if (action === 'checkIn' || (READS.indexOf(action) < 0 && action !== 'attachPhoto' && action !== 'batch')) toast((net ? 'Mạng chập chờn / đang đông người' : 'Đang đông người') + ', đang gửi lại… (lần ' + (lan + 1) + ')');
-      await new Promise(r => setTimeout(r, 1000 + Math.random() * 2000 * (lan + 1)));
+      const ms = lag ? (lag[lan][0] + Math.random() * (lag[lan][1] - lag[lan][0])) * 1000 : 1000 + Math.random() * 2000 * (lan + 1);
+      await new Promise(r => setTimeout(r, ms));
     }
   }
 }
