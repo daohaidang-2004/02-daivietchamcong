@@ -104,6 +104,12 @@ let PHOTO = '', PHOTOS = [];
   PHOTO = c.toDataURL('image/jpeg', 0.72); })();
 
 if (st.url) $('#url').value = st.url;
+// Nhớ lựa chọn lần trước (bấm Ctrl+F5 không bị quay về "Cùng 1 lúc")
+['k', 'spread', 'retry', 'photo', 'n'].forEach(id => {
+  const el = $('#' + id); if (!el) return;
+  const v = localStorage.getItem('tt_opt_' + id); if (v !== null) el.value = v;
+  el.addEventListener('change', () => localStorage.setItem('tt_opt_' + id, el.value));
+});
 
 async function api(a, t, p, timeoutMs) {
   const ctl = new AbortController(); const to = setTimeout(() => ctl.abort(), timeoutMs || 120000);
@@ -198,17 +204,21 @@ $('#bFire').onclick = async () => {
     const sent = performance.now() - T0;
     const a = st.accts[ma];
     const lo = loai === 'VAO' && a.vao ? 'RA' : loai;
-    const body = { __perf: true, Loai: lo, ViDo: st.site.lat, KinhDo: st.site.lng, DoChinhXac: 10, MoTa: FACE, SongDong: true }; // ảnh gửi sau như app thật
+    // Giống app thật: ảnh gửi sau; ra ca gửi kèm vị trí dòng lúc vào ca
+    const body = Object.assign({ __perf: true, Loai: lo, ViDo: st.site.lat, KinhDo: st.site.lng, DoChinhXac: 10, MoTa: FACE, SongDong: true }, lo === 'RA' && a.id ? { ID: a.id, Hang: a.hang } : {});
     const t1 = performance.now();
     let r, lan = 0;
     for (;;) {
       r = await api('checkIn', a.tok, body);
-      if (r.ok || !retry || lan >= 3 || !BUSY.test(r.error || '')) break;
+      if (r.ok) break;
+      // Gửi lại lượt VÀO mà máy chủ báo "đã check-in": lượt trước đã ghi xong → tính là thành công (như app thật)
+      if (lan > 0 && lo === 'VAO' && /đã check-in lúc/.test(r.error || '')) { r = Object.assign(r, { ok: true, data: { Ban: null } }); break; }
+      if (!retry || lan >= 3 || !(BUSY.test(r.error || '') || /kết nối|bị chặn/.test(r.error || ''))) break;
       lan++; await sleep(1000 + Math.random() * 2000 * lan);
     }
     const tLast = r._t;
     r._t = performance.now() - t1;
-    if (r.ok) a.vao = true;
+    if (r.ok) { a.vao = true; if (r.data && r.data.Ban && r.data.Ban.Hang) { a.id = r.data.Ban.ID; a.hang = r.data.Ban.Hang; } }
     if (r.ok && withPhoto && r.data && r.data.Ban) PHOTOS.push((async () => {
       for (let k = 0; k < 3; k++) {
         const x = await api('attachPhoto', a.tok, { Loai: lo, ID: r.data.Ban.ID, Ngay: r.data.Ban.Ngay, Anh: PHOTO });
