@@ -567,7 +567,20 @@ function logSpeed(action, t0, r, payload) {
   } catch (e) {}
 }
 
-function rawCall(action, payload, keepNav, full) {
+/* Lỗi do đông người (chờ khóa ghi Sheet quá lâu / Google quá tải): chưa ghi gì nên gửi lại an toàn */
+const BUSY_ERR = /chờ khóa|lock timeout|too many|quá nhiều|simultaneous|service invoked|quá tải|Google trả trang lỗi/i;
+async function rawCall(action, payload, keepNav, full) {
+  for (let lan = 0; ; lan++) {
+    try { return await rawOnce(action, payload, keepNav, full); }
+    catch (e) {
+      if (lan >= 3 || !BUSY_ERR.test(e.message || '')) throw e;
+      if (action === 'checkIn' || READS.indexOf(action) < 0) toast('Đang đông người, đang gửi lại… (lần ' + (lan + 1) + ')');
+      await new Promise(r => setTimeout(r, 1000 + Math.random() * 2000 * (lan + 1)));
+    }
+  }
+}
+
+function rawOnce(action, payload, keepNav, full) {
   const t0 = Date.now();
   return new Promise((resolve, reject) => {
     if (!(window.google && google.script && google.script.run)) {
@@ -576,15 +589,17 @@ function rawCall(action, payload, keepNav, full) {
       busy(true);
       const nav0 = NAV;
       fetch(window.API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ a: action, t: TOKEN, p: payload || {} }) })
-        .then(x => x.json())
-        .then(r => {
+        .then(x => x.text())
+        .then(txt => {
+          let r;
+          try { r = JSON.parse(txt); } catch (e) { r = { ok: false, error: 'Google trả trang lỗi (quá tải), thử lại sau ít giây' }; }
           busy(false); logSpeed(action, t0, r, payload);
           const msg = r && r.ok ? '' : ((r && r.error) || 'Có lỗi xảy ra');
           if (msg.indexOf('AUTH:') === 0) return authExpired(msg);
-          if (nav0 !== NAV && !keepNav) return;
+          if (nav0 !== NAV && !keepNav && !BUSY_ERR.test(msg)) return;
           if (!msg) resolve(full ? r : r.data); else reject(new Error(msg));
         })
-        .catch(() => { busy(false); if (nav0 === NAV) reject(new Error('Mất kết nối, thử lại')); });
+        .catch(() => { busy(false); if (nav0 === NAV || keepNav) reject(new Error('Mất kết nối, thử lại')); });
       return;
     }
     busy(true);
@@ -594,10 +609,10 @@ function rawCall(action, payload, keepNav, full) {
         busy(false); logSpeed(action, t0, r, payload);
         const msg = r && r.ok ? '' : ((r && r.error) || 'Có lỗi xảy ra');
         if (msg.indexOf('AUTH:') === 0) return authExpired(msg);
-        if (nav0 !== NAV && !keepNav) return;
+        if (nav0 !== NAV && !keepNav && !BUSY_ERR.test(msg)) return;
         if (!msg) resolve(full ? r : r.data); else reject(new Error(msg));
       })
-      .withFailureHandler(e => { busy(false); if (nav0 === NAV) reject(new Error((e && e.message) || 'Mất kết nối, thử lại')); })
+      .withFailureHandler(e => { busy(false); const m = (e && e.message) || 'Mất kết nối, thử lại'; if (nav0 === NAV || keepNav || BUSY_ERR.test(m)) reject(new Error(m)); })
       .api(action, TOKEN, payload || {});
   });
 }
