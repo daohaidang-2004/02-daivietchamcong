@@ -305,6 +305,16 @@ table.t input.i{min-height:34px;padding:6px 8px;font-size:13px;min-width:110px}
   main{padding:0} .card{box-shadow:none}
   body{background:#fff}
 }
+
+/* Khung chờ tải */
+.skel{animation:skIn .2s ease}
+.sk{background:linear-gradient(90deg,#e8eded 25%,#f4f7f7 37%,#e8eded 63%);background-size:400% 100%;animation:skSh 1.3s ease infinite;border-radius:10px}
+.sk-t{height:22px;width:40%;margin-bottom:14px}
+.sk-row{display:flex;gap:10px;margin-bottom:12px}.sk-b{flex:1;height:64px;border-radius:14px}
+.sk-card{background:#fff;border-radius:var(--r);padding:14px;border:1px solid var(--line,#e6eaea)}
+.sk-l{height:14px;margin:10px 0}.sk-l:nth-child(2n){width:80%}.sk-l:nth-child(3n){width:60%}
+@keyframes skSh{0%{background-position:100% 50%}100%{background-position:0 50%}}
+@keyframes skIn{from{opacity:0}to{opacity:1}}
 </style>
 <title>Chấm công Đại Việt</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
@@ -387,11 +397,41 @@ function busy(on) { pending += on ? 1 : -1; $('#loading').classList.toggle('hidd
 
 /* Bộ nhớ đệm: trang đã xem sẽ hiện ngay lập tức, dữ liệu mới được tải ngầm rồi cập nhật */
 const READS = ['today', 'myAttendance', 'myRequests', 'myPayslips', 'dashboard', 'listEmployees', 'listAttendance', 'listRequests',
-  'getAdjustments', 'getPayroll', 'getSettings', 'listBranches', 'listHolidays', 'listSchedules'];
+  'getAdjustments', 'getPayroll', 'getSettings', 'listBranches', 'listHolidays', 'listSchedules',
+  'adminTodo', 'listNotices', 'debtList', 'netOT', 'listFaces', 'otSites'];
+// Thao tác không đổi dữ liệu (không cần xóa đệm)
+const NOWRITE = ['info', 'me', 'login', 'getPhoto', 'logout', 'debts', 'myProfile', 'netPC', 'exportBank', 'exportPayroll', 'exportAttendance', 'myNotices', 'readNotices', 'resetPassword'];
+// Ghi dữ liệu → chỉ làm mới các trang bị ảnh hưởng ('*' = mọi trang)
+const AF_DON = ['listRequests', 'dashboard', 'adminTodo', 'listAttendance', 'getPayroll', 'netOT', 'getAdjustments', 'myRequests', 'myAttendance', 'otSites'];
+const AF_CONG = ['listAttendance', 'dashboard', 'adminTodo', 'netOT', 'getAdjustments', 'myAttendance', 'today', 'otSites'];
+const AF_LUONG = ['getPayroll', 'adminTodo', 'debtList', 'getAdjustments', 'myPayslips', 'listNotices'];
+const AF_NO = ['debtList', 'getAdjustments', 'getPayroll', 'adminTodo'];
+const AF_LE = ['listHolidays', 'listAttendance', 'dashboard', 'adminTodo', 'getAdjustments', 'netOT', 'myAttendance', 'otSites'];
+const AFFECT = {
+  decideRequest: AF_DON, decideMany: AF_DON, reopenExplain: ['otSites', 'listRequests', 'adminTodo'],
+  registerOT: ['otSites', 'listRequests', 'adminTodo', 'dashboard', 'listAttendance', 'myRequests'],
+  saveAttendance: AF_CONG, deleteAttendance: AF_CONG,
+  saveEmployee: '*', deleteEmployee: '*', deleteEmployees: '*',
+  setRole: ['listEmployees', 'dashboard', 'adminTodo', 'listAttendance', 'otSites'],
+  saveAdjustments: ['getAdjustments', 'debtList', 'getPayroll', 'adminTodo'],
+  saveNetOT: ['netOT', 'getAdjustments', 'getPayroll', 'adminTodo'],
+  calcPayroll: AF_LUONG, publishPayroll: AF_LUONG, setPaid: AF_LUONG,
+  addDebt: AF_NO, payDebt: AF_NO, editDebt: AF_NO, deleteDebt: AF_NO,
+  sendNotice: ['listNotices', 'adminTodo'], deleteNotice: ['listNotices', 'adminTodo'],
+  decideFace: ['listFaces', 'dashboard', 'adminTodo', 'listEmployees'], resetFace: ['listFaces', 'dashboard', 'adminTodo', 'listEmployees'],
+  saveBranch: ['listBranches', 'dashboard', 'listAttendance', 'listRequests', 'otSites', 'adminTodo'],
+  deleteBranch: ['listBranches', 'dashboard', 'listAttendance', 'listRequests', 'otSites', 'adminTodo'],
+  saveHoliday: AF_LE, deleteHoliday: AF_LE, seedHolidays: AF_LE,
+  saveSchedule: '*', deleteSchedule: '*', saveSettings: '*'
+};
+const FRESH_MS = 45000; // trong 45 giây vừa tải: dùng luôn, không hỏi lại máy chủ
 let CACHE = {};
 // Lưu bộ nhớ đệm vào máy để lần mở app sau hiện dữ liệu ngay, rồi cập nhật ngầm
 const cacheKeyLS = () => 'cc_cache_' + (ME ? ME.MaNV : '');
-function loadCache() { try { CACHE = JSON.parse(localStorage.getItem(cacheKeyLS()) || '{}'); } catch (e) { CACHE = {}; } }
+function loadCache() {
+  try { CACHE = JSON.parse(localStorage.getItem(cacheKeyLS()) || '{}'); } catch (e) { CACHE = {}; }
+  Object.keys(CACHE).forEach(k => { CACHE[k].t = 0; }); // dữ liệu lần trước: hiện ngay nhưng vẫn hỏi lại máy chủ
+}
 let saveTimer = null;
 function saveCache() {
   clearTimeout(saveTimer);
@@ -407,25 +447,93 @@ function saveCache() {
 }
 let REFRESH = null; // hàm vẽ lại trang hiện tại
 let refreshTimer = null;
+const PAGEKEYS = {}; // khóa dữ liệu → lần mở trang (NAV) gần nhất đã dùng
+const INFLIGHT = {}; // đang tải: gọi trùng thì dùng chung
+const ON_DATA = { adminTodo: d => { TODO = d; paintBadges(); if (CUR === 'admin' && ADMIN_SUB === 'dash' && $('#todoBox')) renderTodo(); } };
+const keyOf = (a, p) => a + '|' + JSON.stringify(p || {});
+const parseKey = k => { const i = k.indexOf('|'); return { a: k.slice(0, i), p: JSON.parse(k.slice(i + 1)) }; };
 
-function call(action, payload) {
-  if (READS.indexOf(action) < 0) {
-    if (['info', 'me', 'login', 'getPhoto', 'logout', 'otSites', 'netOT', 'debts', 'myProfile', 'netPC', 'exportBank', 'exportPayroll', 'exportAttendance', 'myNotices', 'readNotices', 'listNotices', 'adminTodo', 'debtList'].indexOf(action) < 0) { CACHE = {}; saveCache(); } // có thay đổi dữ liệu → xóa đệm
-    return rawCall(action, payload);
-  }
-  const key = action + '|' + JSON.stringify(payload || {});
+/* Gộp nhiều lần đọc trong cùng một nhịp thành 1 lần gọi máy chủ ("batch") */
+let QUEUE = [], qTimer = null, NO_BATCH = false;
+const SOLO = ['today']; // trang chấm công: gọi riêng cho nhanh
+function fetchData(action, payload, key) {
+  if (INFLIGHT[key]) return INFLIGHT[key];
+  const pr = new Promise((res, rej) => {
+    if (NO_BATCH || SOLO.indexOf(action) >= 0) { rawCall(action, payload, true).then(res, rej); return; }
+    QUEUE.push({ a: action, p: payload || {}, res: res, rej: rej });
+    if (!qTimer) qTimer = setTimeout(flushQueue, 0);
+  });
+  INFLIGHT[key] = pr;
+  const done = () => { if (INFLIGHT[key] === pr) delete INFLIGHT[key]; };
+  pr.then(done, done);
+  return pr;
+}
+function flushQueue() {
+  clearTimeout(qTimer); qTimer = null;
+  const q = QUEUE; QUEUE = [];
+  for (let i = 0; i < q.length; i += 20) sendBatch(q.slice(i, i + 20));
+}
+function sendBatch(q) {
+  if (!q.length) return;
+  if (q.length === 1) { rawCall(q[0].a, q[0].p, true).then(q[0].res, q[0].rej); return; }
+  rawCall('batch', { Calls: q.map(x => ({ a: x.a, p: x.p })) }, true).then(list => {
+    q.forEach((x, i) => { const r = list && list[i]; if (r && r.ok) x.res(r.data); else x.rej(new Error((r && r.error) || 'Có lỗi xảy ra')); });
+  }, e => {
+    if (/không hợp lệ/i.test(e.message)) { NO_BATCH = true; q.forEach(x => rawCall(x.a, x.p, true).then(x.res, x.rej)); return; } // máy chủ bản cũ
+    q.forEach(x => x.rej(e));
+  });
+}
+/** Tải sẵn ngầm 1 nhóm trang (1 lần gọi máy chủ cho cả nhóm) */
+function prefetch(list) {
+  list.forEach(x => { const k = keyOf(x[0], x[1]); if (!CACHE[k] || !CACHE[k].t) call(x[0], x[1], { bg: true }).catch(() => {}); });
+  flushQueue();
+}
+
+function call(action, payload, opt) {
+  opt = opt || {};
+  if (READS.indexOf(action) < 0) return writeCall(action, payload);
+  const key = keyOf(action, payload);
+  if (!opt.bg) PAGEKEYS[key] = NAV;
   const hit = CACHE[key];
-  const fresh = rawCall(action, payload, true).then(d => {
+  if (hit && !opt.force && Date.now() - hit.t < FRESH_MS) return Promise.resolve(hit.d);
+  const fresh = fetchData(action, payload, key).then(d => {
     const changed = !hit || JSON.stringify(hit.d) !== JSON.stringify(d);
     CACHE[key] = { d: d, t: Date.now() };
     saveCache();
-    if (hit && changed) scheduleRefresh();
+    if (ON_DATA[action] && changed) ON_DATA[action](d);
+    if (hit && changed && !opt.bg && !opt.force) scheduleRefresh();
     return d;
   });
-  if (hit) { fresh.catch(() => {}); return Promise.resolve(hit.d); }
+  if (hit && !opt.force) { fresh.catch(() => {}); return Promise.resolve(hit.d); }
+  if (opt.bg || opt.force) return fresh;
   // Chưa có đệm: chờ máy chủ; nếu người dùng đã chuyển trang thì bỏ qua kết quả (vẫn lưu vào đệm)
   const nav0 = NAV;
   return new Promise((res, rej) => fresh.then(d => { if (nav0 === NAV) res(d); }, e => { if (nav0 === NAV) rej(e); }));
+}
+
+/** Ghi dữ liệu: máy chủ trả luôn dữ liệu mới của trang đang xem; trang khác chỉ làm mới phần liên quan */
+function writeCall(action, payload) {
+  if (NOWRITE.indexOf(action) >= 0) return rawCall(action, payload);
+  const af = AFFECT[action];
+  if (!af) { CACHE = {}; saveCache(); return rawCall(action, payload); } // thao tác khác (VD nhân viên chấm công): xóa hết đệm như cũ
+  const hit = k => af === '*' || af.indexOf(parseKey(k).a) >= 0;
+  const now = Object.keys(PAGEKEYS).filter(k => PAGEKEYS[k] === NAV && hit(k)).slice(0, 8);
+  const p = Object.assign({}, payload || {});
+  if (now.length && !NO_BATCH) p.__then = now.map(parseKey);
+  return rawCall(action, p, false, true).then(r => {
+    const t = Date.now();
+    const got = {};
+    (r.then || []).forEach((x, i) => { if (x && x.ok && now[i]) { CACHE[now[i]] = { d: x.data, t: t }; got[now[i]] = 1; if (ON_DATA[parseKey(now[i]).a]) ON_DATA[parseKey(now[i]).a](x.data); } });
+    const again = [];
+    Object.keys(CACHE).forEach(k => {
+      if (got[k]) return;
+      if (hit(k)) { again.push(k); delete CACHE[k]; } else CACHE[k].t = 0; // không liên quan: vẫn hiện ngay, hỏi lại máy chủ khi mở
+    });
+    saveCache();
+    // Tải lại ngầm các trang quản lý bị ảnh hưởng để lúc chuyển trang vẫn nhanh
+    if (isAdmin() && again.length) setTimeout(() => { if (TOKEN) prefetch(again.slice(0, 12).map(k => { const x = parseKey(k); return [x.a, x.p]; })); }, 1200);
+    return r.data;
+  });
 }
 
 function scheduleRefresh() {
@@ -448,18 +556,18 @@ const ACT_VN = { today: 'Mở trang chấm công', checkIn: 'Chấm công vào/r
   deleteEmployee: 'Xóa nhân viên', deleteEmployees: 'Xóa nhiều nhân viên', listAttendance: 'Bảng công', saveAttendance: 'Sửa công', listRequests: 'Danh sách đơn', decideRequest: 'Duyệt 1 đơn',
   decideMany: 'Duyệt tất cả', getAdjustments: 'Bước 1 điều chỉnh', saveAdjustments: 'Lưu điều chỉnh', calcPayroll: 'Tính lương', getPayroll: 'Xem bảng lương',
   publishPayroll: 'Công bố lương', setPaid: 'Đánh dấu đã trả', exportPayroll: 'Xuất Excel lương', exportBank: 'File chuyển khoản', otSites: 'Trang tăng ca',
-  registerOT: 'Đăng ký tăng ca', getSettings: 'Cài đặt', listBranches: 'Công trình', listSchedules: 'Lịch làm việc', netOT: 'Tăng ca lương NET', myNotices: 'Thông báo', sendNotice: 'Gửi thông báo', explainAttendance: 'Gửi giải trình', exportAttendance: 'Xuất bảng công', setRole: 'Đổi quyền', adminTodo: 'Việc cần làm', debtList: 'Sổ nợ' };
+  registerOT: 'Đăng ký tăng ca', getSettings: 'Cài đặt', listBranches: 'Công trình', listSchedules: 'Lịch làm việc', netOT: 'Tăng ca lương NET', myNotices: 'Thông báo', sendNotice: 'Gửi thông báo', explainAttendance: 'Gửi giải trình', exportAttendance: 'Xuất bảng công', setRole: 'Đổi quyền', adminTodo: 'Việc cần làm', debtList: 'Sổ nợ', batch: 'Tải gộp nhiều trang' };
 let SPEED = [];
 try { SPEED = JSON.parse(localStorage.getItem('cc_speed') || '[]'); } catch (e) { SPEED = []; }
-function logSpeed(action, t0, r) {
+function logSpeed(action, t0, r, payload) {
   try {
-    SPEED.unshift({ a: action, t: Date.now() - t0, s: r && r.ms != null ? r.ms : null, at: new Date().toTimeString().slice(0, 8) });
+    SPEED.unshift({ a: action, n: payload && payload.Calls ? payload.Calls.length : 0, t: Date.now() - t0, s: r && r.ms != null ? r.ms : null, at: new Date().toTimeString().slice(0, 8) });
     SPEED = SPEED.slice(0, 40);
     localStorage.setItem('cc_speed', JSON.stringify(SPEED));
   } catch (e) {}
 }
 
-function rawCall(action, payload, keepNav) {
+function rawCall(action, payload, keepNav, full) {
   const t0 = Date.now();
   return new Promise((resolve, reject) => {
     if (!(window.google && google.script && google.script.run)) {
@@ -470,11 +578,11 @@ function rawCall(action, payload, keepNav) {
       fetch(window.API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ a: action, t: TOKEN, p: payload || {} }) })
         .then(x => x.json())
         .then(r => {
-          busy(false); logSpeed(action, t0, r);
+          busy(false); logSpeed(action, t0, r, payload);
           const msg = r && r.ok ? '' : ((r && r.error) || 'Có lỗi xảy ra');
           if (msg.indexOf('AUTH:') === 0) return authExpired(msg);
           if (nav0 !== NAV && !keepNav) return;
-          if (!msg) resolve(r.data); else reject(new Error(msg));
+          if (!msg) resolve(full ? r : r.data); else reject(new Error(msg));
         })
         .catch(() => { busy(false); if (nav0 === NAV) reject(new Error('Mất kết nối, thử lại')); });
       return;
@@ -483,11 +591,11 @@ function rawCall(action, payload, keepNav) {
     const nav0 = NAV;
     google.script.run
       .withSuccessHandler(r => {
-        busy(false); logSpeed(action, t0, r);
+        busy(false); logSpeed(action, t0, r, payload);
         const msg = r && r.ok ? '' : ((r && r.error) || 'Có lỗi xảy ra');
         if (msg.indexOf('AUTH:') === 0) return authExpired(msg);
         if (nav0 !== NAV && !keepNav) return;
-        if (!msg) resolve(r.data); else reject(new Error(msg));
+        if (!msg) resolve(full ? r : r.data); else reject(new Error(msg));
       })
       .withFailureHandler(e => { busy(false); if (nav0 === NAV) reject(new Error((e && e.message) || 'Mất kết nối, thử lại')); })
       .api(action, TOKEN, payload || {});
@@ -639,17 +747,20 @@ function startApp() {
   $$('#side [data-k]').forEach(b => b.onclick = () => goMenu(b.dataset.k));
   $('#btnMine').innerHTML = IC.finger + ' Chấm công của tôi';
   TODO = null;
-  if (isAdmin()) setTimeout(loadTodo, 800);
   go(isAdmin() ? 'admin' : 'checkin');
+  if (isAdmin()) loadTodo(); // cùng nhịp với Tổng quan → gộp 1 lần gọi
   if (ME.PhaiDoiMK) forceChangePassword();
   NOTI = null; $('#bellN').classList.add('hidden');
-  clearInterval(notiTimer); notiTimer = setInterval(() => { if (TOKEN && !document.hidden) { loadNotices(); if (isAdmin()) loadTodo(); } }, 180000);
+  clearInterval(notiTimer); notiTimer = setInterval(() => { if (TOKEN && !document.hidden) { loadNotices(); if (isAdmin()) loadTodo(true); } }, 180000);
   setTimeout(() => loadNotices(true), 1200);
-  // Tải sẵn ngầm vài trang hay xem để lúc bấm vào hiện ngay
+  // Tải sẵn ngầm các trang hay xem (gộp theo nhóm, mỗi nhóm 1 lần gọi) để lúc bấm vào hiện ngay
   setTimeout(() => {
-    const pre = isAdmin() ? [['listEmployees'], ['listBranches'], ['listSchedules'], ['listRequests', { TrangThai: 'CHO' }]] : [['myAttendance', { Thang: thisMonth() }], ['myPayslips']];
-    pre.reduce((p, x) => p.then(() => TOKEN ? call(x[0], x[1]).catch(() => {}) : null), Promise.resolve());
-  }, 2500);
+    if (!TOKEN) return;
+    if (!isAdmin()) { prefetch([['myAttendance', { Thang: thisMonth() }], ['myPayslips']]); return; }
+    prefetch([['listEmployees'], ['listBranches'], ['listSchedules'], ['getSettings'], ['listHolidays'], ['listFaces'], ['listNotices']]);
+    prefetch([['listRequests', { TrangThai: REQ_ST, Loai: REQ_LOAI, ChiNhanh: REQ_SITE }], ['listAttendance', { Thang: ATT_MONTH, Luoi: true }]]);
+    prefetch([['getPayroll', { Thang: PAY_MONTH }], ['getAdjustments', { Thang: PAY_MONTH }], ['netOT', { Thang: PAY_MONTH }], ['debtList', { Thang: PAY_MONTH }]]);
+  }, 1500);
 }
 
 let CUR = '';
@@ -1514,12 +1625,15 @@ const addMonths = (ds, k) => {
 };
 const dangThuViec = e => !!e.ThuViecDen && e.ThuViecDen >= todayStr();
 
+// Khung chờ (nhấp nháy nhẹ) thay cho chữ "Đang tải…"
+const SKEL = '<div class="skel"><div class="sk sk-t"></div><div class="sk-row"><div class="sk sk-b"></div><div class="sk sk-b"></div><div class="sk sk-b"></div></div>' +
+  '<div class="sk-card">' + '<div class="sk sk-l"></div>'.repeat(6) + '</div></div>';
 function vAdmin(sub) {
   ADMIN_SUB = sub || ADMIN_SUB; NAV++;
   if (CUR !== 'admin') { CUR = 'admin'; stopClock(); window.scrollTo(0, 0); }
   markNav();
   REFRESH = ADMIN_SUB === 'set' ? null : () => vAdmin(ADMIN_SUB);
-  $('#main').innerHTML = '<div id="adBody"><div class="empty">Đang tải…</div></div>';
+  $('#main').innerHTML = '<div id="adBody">' + SKEL + '</div>';
   ({ dash: aDash, emp: aEmp, face: aFace, att: aAtt, req: aReq, pay: aPay, debt: aDebt, role: aRole, tb: aNotice, set: aSet })[ADMIN_SUB]();
 }
 
@@ -1573,8 +1687,8 @@ function openMore() {
 }
 /* Việc cần làm: số đỏ trên menu + trang Tổng quan */
 let TODO = null;
-async function loadTodo() {
-  try { TODO = await rawCall('adminTodo', {}, true); paintBadges(); if (CUR === 'admin' && ADMIN_SUB === 'dash' && $('#todoBox')) renderTodo(); } catch (e) {}
+async function loadTodo(force) {
+  try { TODO = await call('adminTodo', {}, force ? { force: true } : { bg: true }); paintBadges(); if (CUR === 'admin' && ADMIN_SUB === 'dash' && $('#todoBox')) renderTodo(); } catch (e) {}
 }
 function paintBadges() {
   if (!TODO) return;
@@ -2234,7 +2348,7 @@ async function aDebt() {
     const open = ma => {
       const e = list.find(x => x.MaNV === ma) || { MaNV: ma, HoTen: ma };
       const m = modal('Sổ nợ: ' + e.HoTen, '<div id="noBox" class="small muted">Đang tải…</div>', { wide: true });
-      debtPanel(m, ma, () => { CACHE = {}; });
+      debtPanel(m, ma, () => {});
       const obs = setInterval(() => { if (!document.body.contains(m)) { clearInterval(obs); if (CUR === 'admin' && ADMIN_SUB === 'debt') aDebt(); } }, 400);
     };
     $$('#adBody tr[data-ma]').forEach(tr => tr.onclick = () => open(tr.dataset.ma));
@@ -2402,7 +2516,7 @@ async function sGen() {
       '<div class="card mt2"><div class="row between"><h3>Tốc độ phản hồi (đo trên máy này)</h3><button class="btn light sm" id="spClear">Xóa số đo</button></div>' +
       '<div class="small muted">Tổng = thời gian bạn chờ (gồm mạng + Google khởi động). Máy chủ = thời gian app xử lý trên Google. Hai số chênh nhiều là do mạng / Google khởi động.</div>' +
       (SPEED.length ? '<div class="tbl-wrap mt"><table class="t"><thead><tr><th>Lúc</th><th>Thao tác</th><th class="right">Tổng (giây)</th><th class="right">Máy chủ (giây)</th></tr></thead><tbody>' +
-        SPEED.map(x => '<tr><td class="num">' + esc(x.at) + '</td><td>' + esc(ACT_VN[x.a] || x.a) + '</td><td class="right num"' + (x.t > 3000 ? ' style="color:var(--bad)"' : '') + '>' + (x.t / 1000).toFixed(1) + '</td><td class="right num">' + (x.s == null ? '' : (x.s / 1000).toFixed(1)) + '</td></tr>').join('') +
+        SPEED.map(x => '<tr><td class="num">' + esc(x.at) + '</td><td>' + esc((ACT_VN[x.a] || x.a) + (x.n ? ' (' + x.n + ' trang)' : '')) + '</td><td class="right num"' + (x.t > 3000 ? ' style="color:var(--bad)"' : '') + '>' + (x.t / 1000).toFixed(1) + '</td><td class="right num">' + (x.s == null ? '' : (x.s / 1000).toFixed(1)) + '</td></tr>').join('') +
         '</tbody></table></div>' : '<div class="empty">Chưa có số đo. Dùng app một lúc rồi quay lại đây.</div>') + '</div>';
     $$('#sForm .chips').forEach(g => $$('input[type=radio]', g).forEach(r => r.onchange = () => $$('.chip', g).forEach(c => c.classList.toggle('on', $('input', c).checked))));
     $('#spClear').onclick = () => { SPEED = []; try { localStorage.removeItem('cc_speed'); } catch (e) {} sGen(); };
