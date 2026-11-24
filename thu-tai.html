@@ -66,6 +66,9 @@ table{width:100%;border-collapse:collapse;font-size:13px;margin-top:10px}th,td{t
       <option value="10">Rải trong 10 giây</option>
       <option value="30">Rải trong 30 giây</option>
       <option value="120">Rải trong 2 phút (gần thực tế)</option></select></div>
+    <div><label>Bị báo đông thì tự gửi lại</label><select id="retry">
+      <option value="1">Có (giống app thật, tối đa 3 lần)</option>
+      <option value="0">Không (đo máy chủ thô)</option></select></div>
     <div><label>Kèm ảnh khuôn mặt</label><select id="photo">
       <option value="1">Có (giống thật, lưu ảnh vào Drive)</option>
       <option value="0">Không</option></select></div>
@@ -91,6 +94,7 @@ const pad3 = i => String(i).padStart(3, '0');
 const st = JSON.parse(localStorage.getItem('tt_state') || '{}'); // {admin, accts:{TT001:{tok, vao}}, n}
 const save = () => localStorage.setItem('tt_state', JSON.stringify(st));
 const log = m => { const l = $('#log'); l.textContent += '[' + new Date().toTimeString().slice(0, 8) + '] ' + m + '\n'; l.scrollTop = 1e9; };
+const BUSY = /chờ khóa|lock timeout|too many|quá nhiều|simultaneous|service invoked|quá tải|Google trả trang lỗi/i;
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 // Khuôn mặt giả (cố định) – dùng cho cả đăng ký và chấm công nên luôn khớp
 const FACE = Array.from({ length: 128 }, (_, i) => Math.round(Math.sin(i * 1.7) * 1000) / 10000);
@@ -182,7 +186,7 @@ $('#bSetup').onclick = async () => {
 
 $('#bFire').onclick = async () => {
   const list = Object.keys(st.accts).filter(k => st.accts[k].tok).sort().slice(0, Math.max(1, Number($('#k').value) || 100));
-  const spread = Number($('#spread').value) * 1000, withPhoto = $('#photo').value === '1';
+  const spread = Number($('#spread').value) * 1000, withPhoto = $('#photo').value === '1', retry = $('#retry').value === '1';
   const loai = list.every(k => st.accts[k].vao) ? 'RA' : 'VAO';
   if (!confirm('Bắn ' + list.length + ' lượt chấm công ' + loai + (spread ? ' rải trong ' + spread / 1000 + ' giây' : ' cùng 1 lúc') + ' vào app thật?')) return;
   $('#bFire').disabled = true; $('#result').innerHTML = '';
@@ -194,10 +198,18 @@ $('#bFire').onclick = async () => {
     const sent = performance.now() - T0;
     const a = st.accts[ma];
     const lo = loai === 'VAO' && a.vao ? 'RA' : loai;
-    const r = await api('checkIn', a.tok, Object.assign({ Loai: lo, ViDo: st.site.lat, KinhDo: st.site.lng, DoChinhXac: 10, MoTa: FACE, SongDong: true }, withPhoto ? { Anh: PHOTO } : {}));
+    const body = Object.assign({ Loai: lo, ViDo: st.site.lat, KinhDo: st.site.lng, DoChinhXac: 10, MoTa: FACE, SongDong: true }, withPhoto ? { Anh: PHOTO } : {});
+    const t1 = performance.now();
+    let r, lan = 0;
+    for (;;) {
+      r = await api('checkIn', a.tok, body);
+      if (r.ok || !retry || lan >= 3 || !BUSY.test(r.error || '')) break;
+      lan++; await sleep(1000 + Math.random() * 2000 * lan);
+    }
+    r._t = performance.now() - t1;
     if (r.ok) a.vao = true;
     done++; $('#pFire').style.width = Math.round(done / list.length * 100) + '%';
-    return { ma: ma, ok: r.ok, err: r.error || '', t: r._t, s: r.ms, sent: sent, end: performance.now() - T0 };
+    return { ma: ma, ok: r.ok, err: r.error || '', t: r._t, s: r.ms, sent: sent, end: performance.now() - T0, lan: lan };
   }));
   save();
   const total = (performance.now() - T0) / 1000;
@@ -216,7 +228,7 @@ function report(res, total, loai, spread) {
   const p90 = pct(ts, 90), mx = Math.max(0, ...ts);
   let v, cls;
   if (!bad.length && p90 <= 8) { v = '✅ Chịu tốt: ' + res.length + '/' + res.length + ' lượt thành công, 90% người chờ không quá ' + p90.toFixed(1) + ' giây.'; cls = 'v-ok'; }
-  else if (bad.length <= res.length * 0.05 && p90 <= 20) { v = '⚠ Tạm được: ' + bad.length + ' lượt lỗi, 90% người chờ ≤ ' + p90.toFixed(1) + ' giây. Nên thêm "tự thử lại" trong app.'; cls = 'v-warn'; }
+  else if (bad.length <= res.length * 0.05 && p90 <= 20) { v = '⚠ Tạm được: ' + bad.length + ' lượt lỗi, 90% người chờ ≤ ' + p90.toFixed(1) + ' giây. Một số người phải chờ khá lâu.'; cls = 'v-warn'; }
   else { v = '❌ Quá tải: ' + bad.length + '/' + res.length + ' lượt lỗi, người chậm nhất chờ ' + mx.toFixed(1) + ' giây. Cần sửa trước khi dùng thật.'; cls = 'v-bad'; }
   // Biểu đồ: số lượt hoàn thành theo từng giây
   const secs = Math.max(1, Math.ceil(total)), bins = Array(secs).fill(0), ebins = Array(secs).fill(0);
@@ -233,6 +245,7 @@ function report(res, total, loai, spread) {
       '<div class="stat"><b>' + (ss.length ? (ss.reduce((a, b) => a + b, 0) / ss.length).toFixed(1) : '–') + 's</b><span>Máy chủ xử lý TB / lượt</span></div>' +
       '<div class="stat"><b>' + total.toFixed(1) + 's</b><span>Tổng thời gian ' + (spread ? '(rải ' + spread / 1000 + 's)' : '') + '</span></div>' +
       '<div class="stat"><b>' + (ok.length / total).toFixed(1) + '</b><span>Lượt xong / giây</span></div>' +
+      '<div class="stat"><b>' + res.filter(r => r.lan).length + '</b><span>Người phải gửi lại (tự động)</span></div>' +
     '</div>' +
     '<div class="small muted" style="margin-top:12px">Số lượt xong theo từng giây (xanh = thành công, đỏ = lỗi):</div>' +
     '<div class="hist">' + bins.map((x, i) => '<div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:100%">' +
