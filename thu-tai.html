@@ -213,8 +213,12 @@ $('#bFire').onclick = async () => {
       if (r.ok) break;
       // Gửi lại lượt VÀO mà máy chủ báo "đã check-in": lượt trước đã ghi xong → tính là thành công (như app thật)
       if (lan > 0 && lo === 'VAO' && /đã check-in lúc/.test(r.error || '')) { r = Object.assign(r, { ok: true, data: { Ban: null } }); break; }
-      if (!retry || lan >= 3 || !(BUSY.test(r.error || '') || /kết nối|bị chặn/.test(r.error || ''))) break;
-      lan++; await sleep(1000 + Math.random() * 2000 * lan);
+      // Giống app thật: chờ khóa → gửi lại sau 1–3s (3 lần); Google từ chối / mất kết nối → chờ lâu dần 3–8s, 5–15s, 10–20s… (5 lần)
+      const e = r.error || '', net = /kết nối|bị chặn|quá tải|trang lỗi|too many|simultaneous|service invoked/i.test(e);
+      const LAG = [[3, 8], [5, 15], [10, 20], [10, 20], [10, 20]];
+      if (!retry || !(BUSY.test(e) || net) || lan >= (net ? LAG.length : 3)) break;
+      await sleep(net ? (LAG[lan][0] + Math.random() * (LAG[lan][1] - LAG[lan][0])) * 1000 : 1000 + Math.random() * 2000 * (lan + 1));
+      lan++;
     }
     const tLast = r._t;
     r._t = performance.now() - t1;
