@@ -569,12 +569,22 @@ function logSpeed(action, t0, r, payload) {
 
 /* Lỗi do đông người (chờ khóa ghi Sheet quá lâu / Google quá tải): chưa ghi gì nên gửi lại an toàn */
 const BUSY_ERR = /chờ khóa|lock timeout|too many|quá nhiều|simultaneous|service invoked|quá tải|Google trả trang lỗi/i;
+// Mất kết nối / Google từ chối vì quá đông: chỉ tự gửi lại với chấm công và các lượt xem (gửi lại an toàn, không tạo trùng)
+const NET_ERR = /mất kết nối|failed to fetch|networkerror|network error|load failed/i;
+const NET_RETRY = ['checkIn', 'attachPhoto', 'batch'];
 async function rawCall(action, payload, keepNav, full) {
   for (let lan = 0; ; lan++) {
     try { return await rawOnce(action, payload, keepNav, full); }
     catch (e) {
-      if (lan >= 3 || !BUSY_ERR.test(e.message || '')) throw e;
-      if (action === 'checkIn' || READS.indexOf(action) < 0) toast('Đang đông người, đang gửi lại… (lần ' + (lan + 1) + ')');
+      const m = e.message || '';
+      // Gửi lại chấm công VÀO mà máy chủ báo "đã check-in": lượt trước thật ra đã ghi xong → coi là thành công
+      if (lan > 0 && action === 'checkIn' && payload && payload.Loai !== 'RA' && /đã check-in lúc/.test(m)) {
+        const kq = { msg: 'Đã chấm công vào lúc ' + (m.match(/lúc\s*([\d:]+)/) || [])[1] + '.', Ban: null };
+        return full ? { ok: true, data: kq } : kq;
+      }
+      const busy = BUSY_ERR.test(m), net = NET_ERR.test(m) && (NET_RETRY.indexOf(action) >= 0 || READS.indexOf(action) >= 0);
+      if (lan >= 3 || !(busy || net)) throw e;
+      if (action === 'checkIn' || (READS.indexOf(action) < 0 && action !== 'attachPhoto' && action !== 'batch')) toast((net ? 'Mạng chập chờn / đang đông người' : 'Đang đông người') + ', đang gửi lại… (lần ' + (lan + 1) + ')');
       await new Promise(r => setTimeout(r, 1000 + Math.random() * 2000 * (lan + 1)));
     }
   }
@@ -1142,13 +1152,17 @@ async function doCheck(type) {
   if (pos.err) { box.className = 'gps bad'; box.innerHTML = IC.pin + '<span>' + esc(pos.err) + '</span>'; }
   else { box.className = 'gps ok'; box.innerHTML = IC.pin + '<span>Đã lấy vị trí (sai số ~' + pos.acc + 'm). Đang gửi…</span>'; }
   try {
+    // Ra ca: gửi kèm vị trí dòng hôm nay để máy chủ đọc đúng chỗ (máy chủ vẫn tự kiểm tra lại)
+    const goiY = type === 'RA' && TODAY && TODAY.Ban && TODAY.Ban.ID ? { ID: TODAY.Ban.ID, Hang: TODAY.Ban.Hang } : {};
     const r = await call('checkIn', Object.assign({ Loai: type, ViDo: pos.err ? null : pos.lat, KinhDo: pos.err ? null : pos.lng, DoChinhXac: pos.acc },
-      face ? { MoTa: face.desc, SongDong: true } : {}));
+      face ? { MoTa: face.desc, SongDong: true } : {}, goiY));
     toast(r.msg, 'ok');
-    // Ảnh gửi sau, chạy ngầm: nhân viên không phải chờ lưu ảnh lên Drive
-    if (face && face.photo && r.Ban) queuePhoto({ Loai: type, ID: r.Ban.ID, Ngay: r.Ban.Ngay, Anh: face.photo });
     if (navigator.vibrate) navigator.vibrate(80);
-    renderCheckin(await call('today'));
+    const t = await call('today');
+    // Ảnh gửi sau, chạy ngầm: nhân viên không phải chờ lưu ảnh lên Drive
+    const ban = r.Ban || t.Ban;
+    if (face && face.photo && ban && ban.ID) queuePhoto({ Loai: type, ID: ban.ID, Ngay: ban.Ngay, Anh: face.photo });
+    renderCheckin(t);
   } catch (e) {
     fail(e);
     box.className = 'gps bad'; box.innerHTML = IC.pin + '<span>' + esc(e.message) + '</span>';
