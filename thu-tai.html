@@ -198,7 +198,7 @@ $('#bFire').onclick = async () => {
     const sent = performance.now() - T0;
     const a = st.accts[ma];
     const lo = loai === 'VAO' && a.vao ? 'RA' : loai;
-    const body = Object.assign({ Loai: lo, ViDo: st.site.lat, KinhDo: st.site.lng, DoChinhXac: 10, MoTa: FACE, SongDong: true }, withPhoto ? { Anh: PHOTO } : {});
+    const body = Object.assign({ __perf: true, Loai: lo, ViDo: st.site.lat, KinhDo: st.site.lng, DoChinhXac: 10, MoTa: FACE, SongDong: true }, withPhoto ? { Anh: PHOTO } : {});
     const t1 = performance.now();
     let r, lan = 0;
     for (;;) {
@@ -206,10 +206,11 @@ $('#bFire').onclick = async () => {
       if (r.ok || !retry || lan >= 3 || !BUSY.test(r.error || '')) break;
       lan++; await sleep(1000 + Math.random() * 2000 * lan);
     }
+    const tLast = r._t;
     r._t = performance.now() - t1;
     if (r.ok) a.vao = true;
     done++; $('#pFire').style.width = Math.round(done / list.length * 100) + '%';
-    return { ma: ma, ok: r.ok, err: r.error || '', t: r._t, s: r.ms, sent: sent, end: performance.now() - T0, lan: lan };
+    return { ma: ma, ok: r.ok, err: r.error || '', t: r._t, s: r.ms, sent: sent, end: performance.now() - T0, lan: lan, perf: r.perf, ver: r.ver, mang: r.ms != null ? tLast - r.ms : null };
   }));
   save();
   const total = (performance.now() - T0) / 1000;
@@ -218,6 +219,22 @@ $('#bFire').onclick = async () => {
   $('#bFire').disabled = false;
 };
 
+const BUOC = [['xacThuc', 'Kiểm tra đăng nhập'], ['viTri', 'Đọc cài đặt + vị trí'], ['khuonMat', 'Kiểm tra khuôn mặt'], ['luuAnh', 'Lưu ảnh lên Drive'],
+  ['chuanBi', 'Chuẩn bị (lịch, đơn tăng ca, tiêu đề)'], ['choKhoa', 'Chờ khóa (xếp hàng)'], ['giuKhoa', 'Giữ khóa (tổng)'], ['timDong', '  ↳ tìm dòng của mình'],
+  ['ghiDong', '  ↳ ghi dòng'], ['luuHan', '  ↳ lưu hẳn xuống Sheet'], ['sauGhi', 'Sau khi ghi (đánh dấu dữ liệu đổi)']];
+function perfTable(ok) {
+  const L = ok.filter(r => r.perf);
+  if (!L.length) return '<div class="small muted" style="margin-top:10px">Máy chủ chưa gửi số đo từng bước (code.gs cũ?).</div>';
+  const col = k => L.map(r => (r.perf[k] || 0) / 1000);
+  const avg = a => a.reduce((x, y) => x + y, 0) / a.length;
+  const row = (lb, a, strong) => '<tr' + (strong ? ' style="font-weight:700"' : '') + '><td style="white-space:pre">' + lb + '</td><td>' + avg(a).toFixed(2) + 's</td><td>' + pct(a, 50).toFixed(2) + 's</td><td>' + Math.max(...a).toFixed(2) + 's</td></tr>';
+  return '<div style="margin-top:14px"><b>Thời gian từng bước trên máy chủ</b> <span class="small muted">· phiên bản máy chủ: ' + (L[0].ver || '?') + ' · lần gửi cuối của ' + L.length + ' lượt thành công</span></div>' +
+    '<table><thead><tr><th>Bước</th><th>Trung bình</th><th>Trung vị</th><th>Lâu nhất</th></tr></thead><tbody>' +
+    BUOC.map(b => row(b[1], col(b[0]), b[0] === 'choKhoa' || b[0] === 'giuKhoa')).join('') +
+    row('Tổng máy chủ', L.map(r => (r.s || 0) / 1000), true) +
+    row('Mạng + Google khởi động', L.map(r => Math.max(0, (r.mang || 0) / 1000)), true) +
+    '</tbody></table>';
+}
 function pct(a, p) { if (!a.length) return 0; const s = a.slice().sort((x, y) => x - y); return s[Math.min(s.length - 1, Math.floor(p / 100 * s.length))]; }
 function report(res, total, loai, spread) {
   const ok = res.filter(r => r.ok), bad = res.filter(r => !r.ok);
@@ -229,6 +246,7 @@ function report(res, total, loai, spread) {
   let v, cls;
   if (!bad.length && p90 <= 8) { v = '✅ Chịu tốt: ' + res.length + '/' + res.length + ' lượt thành công, 90% người chờ không quá ' + p90.toFixed(1) + ' giây.'; cls = 'v-ok'; }
   else if (bad.length <= res.length * 0.05 && p90 <= 20) { v = '⚠ Tạm được: ' + bad.length + ' lượt lỗi, 90% người chờ ≤ ' + p90.toFixed(1) + ' giây. Một số người phải chờ khá lâu.'; cls = 'v-warn'; }
+  else if (!bad.length) { v = '⏳ Chậm: không ai bị lỗi, nhưng 90% người chờ tới ' + p90.toFixed(1) + ' giây, người chậm nhất ' + mx.toFixed(1) + ' giây.'; cls = 'v-warn'; }
   else { v = '❌ Quá tải: ' + bad.length + '/' + res.length + ' lượt lỗi, người chậm nhất chờ ' + mx.toFixed(1) + ' giây. Cần sửa trước khi dùng thật.'; cls = 'v-bad'; }
   // Biểu đồ: số lượt hoàn thành theo từng giây
   const secs = Math.max(1, Math.ceil(total)), bins = Array(secs).fill(0), ebins = Array(secs).fill(0);
@@ -251,6 +269,7 @@ function report(res, total, loai, spread) {
     '<div class="hist">' + bins.map((x, i) => '<div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:100%">' +
       (ebins[i] ? '<i class="e" style="height:' + ebins[i] / mxb * 100 + '%"></i>' : '') + '<i style="height:' + x / mxb * 100 + '%"></i></div>').join('') + '</div>' +
     (Object.keys(errs).length ? '<table><thead><tr><th>Lỗi gặp phải</th><th>Số lượt</th></tr></thead><tbody>' + Object.keys(errs).map(k => '<tr><td>' + k.replace(/</g, '&lt;') + '</td><td>' + errs[k] + '</td></tr>').join('') + '</tbody></table>' : '') +
+    perfTable(ok) +
     '<div class="small muted" style="margin-top:10px">Chụp màn hình phần này gửi Claude để phân tích.</div>';
 }
 
