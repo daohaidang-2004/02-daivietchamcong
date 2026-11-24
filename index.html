@@ -400,7 +400,7 @@ const READS = ['today', 'myAttendance', 'myRequests', 'myPayslips', 'dashboard',
   'getAdjustments', 'getPayroll', 'getSettings', 'listBranches', 'listHolidays', 'listSchedules',
   'adminTodo', 'listNotices', 'debtList', 'netOT', 'listFaces', 'otSites'];
 // Thao tác không đổi dữ liệu (không cần xóa đệm)
-const NOWRITE = ['info', 'me', 'login', 'getPhoto', 'logout', 'debts', 'myProfile', 'netPC', 'exportBank', 'exportPayroll', 'exportAttendance', 'myNotices', 'readNotices', 'resetPassword'];
+const NOWRITE = ['info', 'me', 'login', 'getPhoto', 'logout', 'debts', 'myProfile', 'netPC', 'exportBank', 'exportPayroll', 'exportAttendance', 'myNotices', 'readNotices', 'resetPassword', 'attachPhoto'];
 // Ghi dữ liệu → chỉ làm mới các trang bị ảnh hưởng ('*' = mọi trang)
 const AF_DON = ['listRequests', 'dashboard', 'adminTodo', 'listAttendance', 'getPayroll', 'netOT', 'getAdjustments', 'myRequests', 'myAttendance', 'otSites'];
 const AF_CONG = ['listAttendance', 'dashboard', 'adminTodo', 'netOT', 'getAdjustments', 'myAttendance', 'today', 'otSites'];
@@ -556,7 +556,7 @@ const ACT_VN = { today: 'Mở trang chấm công', checkIn: 'Chấm công vào/r
   deleteEmployee: 'Xóa nhân viên', deleteEmployees: 'Xóa nhiều nhân viên', listAttendance: 'Bảng công', saveAttendance: 'Sửa công', listRequests: 'Danh sách đơn', decideRequest: 'Duyệt 1 đơn',
   decideMany: 'Duyệt tất cả', getAdjustments: 'Bước 1 điều chỉnh', saveAdjustments: 'Lưu điều chỉnh', calcPayroll: 'Tính lương', getPayroll: 'Xem bảng lương',
   publishPayroll: 'Công bố lương', setPaid: 'Đánh dấu đã trả', exportPayroll: 'Xuất Excel lương', exportBank: 'File chuyển khoản', otSites: 'Trang tăng ca',
-  registerOT: 'Đăng ký tăng ca', getSettings: 'Cài đặt', listBranches: 'Công trình', listSchedules: 'Lịch làm việc', netOT: 'Tăng ca lương NET', myNotices: 'Thông báo', sendNotice: 'Gửi thông báo', explainAttendance: 'Gửi giải trình', exportAttendance: 'Xuất bảng công', setRole: 'Đổi quyền', adminTodo: 'Việc cần làm', debtList: 'Sổ nợ', batch: 'Tải gộp nhiều trang' };
+  registerOT: 'Đăng ký tăng ca', getSettings: 'Cài đặt', listBranches: 'Công trình', listSchedules: 'Lịch làm việc', netOT: 'Tăng ca lương NET', myNotices: 'Thông báo', sendNotice: 'Gửi thông báo', explainAttendance: 'Gửi giải trình', exportAttendance: 'Xuất bảng công', setRole: 'Đổi quyền', adminTodo: 'Việc cần làm', debtList: 'Sổ nợ', batch: 'Tải gộp nhiều trang', attachPhoto: 'Gửi ảnh chấm công' };
 let SPEED = [];
 try { SPEED = JSON.parse(localStorage.getItem('cc_speed') || '[]'); } catch (e) { SPEED = []; }
 function logSpeed(action, t0, r, payload) {
@@ -768,6 +768,7 @@ function startApp() {
   NOTI = null; $('#bellN').classList.add('hidden');
   clearInterval(notiTimer); notiTimer = setInterval(() => { if (TOKEN && !document.hidden) { loadNotices(); if (isAdmin()) loadTodo(true); } }, 180000);
   setTimeout(() => loadNotices(true), 1200);
+  setTimeout(flushPhotos, 4000); // ảnh chấm công chưa gửi được lần trước
   // Tải sẵn ngầm các trang hay xem (gộp theo nhóm, mỗi nhóm 1 lần gọi) để lúc bấm vào hiện ngay
   setTimeout(() => {
     if (!TOKEN) return;
@@ -1091,6 +1092,34 @@ function getPosition() {
   });
 }
 
+/* Hàng chờ gửi ảnh chấm công: lưu trên máy, gửi ngầm; rớt mạng thì lần mở app sau gửi tiếp */
+const PHQ = 'cc_photo_q';
+const photoQ = () => { try { return JSON.parse(localStorage.getItem(PHQ) || '[]'); } catch (e) { return []; } };
+const setPhotoQ = q => { try { localStorage.setItem(PHQ, JSON.stringify(q.slice(-6))); } catch (e) {} };
+function queuePhoto(x) { x.MaNV = ME.MaNV; const q = photoQ(); q.push(x); setPhotoQ(q); flushPhotos(); }
+let photoBusy = false;
+async function flushPhotos() {
+  if (photoBusy || !TOKEN || !ME) return;
+  photoBusy = true;
+  try {
+    for (;;) {
+      const q = photoQ(), i = q.findIndex(x => x.MaNV === ME.MaNV);
+      if (i < 0) break;
+      const x = q[i];
+      let xong = false;
+      for (let lan = 0; lan < 3 && !xong; lan++) {
+        try { await rawCall('attachPhoto', { Loai: x.Loai, ID: x.ID, Ngay: x.Ngay, Anh: x.Anh }, true); xong = true; }
+        catch (e) {
+          if (/không tìm thấy|quá cũ|thiếu cột|không hợp lệ/i.test(e.message)) { xong = true; break; } // không gửi được nữa: bỏ
+          await new Promise(r => setTimeout(r, 2000 * (lan + 1)));
+        }
+      }
+      if (!xong) break; // vẫn rớt mạng: để lần sau
+      const q2 = photoQ(); const j = q2.findIndex(y => y.ID === x.ID && y.Loai === x.Loai); if (j >= 0) q2.splice(j, 1); setPhotoQ(q2);
+    }
+  } finally { photoBusy = false; }
+}
+
 async function doCheck(type) {
   const fm = TODAY && TODAY.KhuonMat;
   if (fm && fm.BatBuoc && fm.TrangThai !== 'DUYET') {
@@ -1114,8 +1143,10 @@ async function doCheck(type) {
   else { box.className = 'gps ok'; box.innerHTML = IC.pin + '<span>Đã lấy vị trí (sai số ~' + pos.acc + 'm). Đang gửi…</span>'; }
   try {
     const r = await call('checkIn', Object.assign({ Loai: type, ViDo: pos.err ? null : pos.lat, KinhDo: pos.err ? null : pos.lng, DoChinhXac: pos.acc },
-      face ? { MoTa: face.desc, SongDong: true, Anh: face.photo } : {}));
+      face ? { MoTa: face.desc, SongDong: true } : {}));
     toast(r.msg, 'ok');
+    // Ảnh gửi sau, chạy ngầm: nhân viên không phải chờ lưu ảnh lên Drive
+    if (face && face.photo && r.Ban) queuePhoto({ Loai: type, ID: r.Ban.ID, Ngay: r.Ban.Ngay, Anh: face.photo });
     if (navigator.vibrate) navigator.vibrate(80);
     renderCheckin(await call('today'));
   } catch (e) {
