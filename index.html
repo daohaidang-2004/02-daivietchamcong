@@ -782,6 +782,8 @@ function startApp() {
   NOTI = null; $('#bellN').classList.add('hidden');
   clearInterval(notiTimer); notiTimer = setInterval(() => { if (TOKEN && !document.hidden) { loadNotices(); if (isAdmin()) loadTodo(true); } }, 180000);
   setTimeout(() => loadNotices(true), 1200);
+  // Nhắc nhân viên hoàn thiện hồ sơ lần đầu; mọi dữ liệu vẫn lưu chung trong hồ sơ NhanVien.
+  setTimeout(async () => { try { if (!sessionStorage.getItem('cc_pf_prompt_' + ME.MaNV)) { const pf = await call('myProfile'); if (!pf.SoTaiKhoan || !pf.CCCD || !pf.NgaySinh) { sessionStorage.setItem('cc_pf_prompt_' + ME.MaNV, '1'); go('account'); toast('Vui lòng cập nhật thông tin cá nhân để kế toán không phải nhập lại.', ''); } } } catch(e) {} }, 1800);
   setTimeout(flushPhotos, 4000); // ảnh chấm công chưa gửi được lần trước
   // Tải sẵn ngầm các trang hay xem (gộp theo nhóm, mỗi nhóm 1 lần gọi) để lúc bấm vào hiện ngay
   setTimeout(() => {
@@ -1849,7 +1851,7 @@ async function aEmp() {
     };
     const render = () => {
       const q = ($('#eSearch').value || '').toLowerCase();
-      const rows = list.filter(e => (showQuit || e.TrangThai !== 'NGHIVIEC') && (!q || (e.HoTen + ' ' + e.MaNV + ' ' + e.SoDienThoai).toLowerCase().includes(q)));
+      const rows = list.filter(e => (showQuit ? e.TrangThai === 'NGHIVIEC' : e.TrangThai !== 'NGHIVIEC') && (!q || (e.HoTen + ' ' + e.MaNV + ' ' + e.SoDienThoai).toLowerCase().includes(q)));
       $('#eList').innerHTML = rows.length ? '<div class="tbl-wrap"><table class="t"><thead><tr><th style="width:34px"><input type="checkbox" id="eAll" title="Chọn tất cả đang hiện"></th><th>Mã</th><th>Họ tên</th><th>Chức vụ</th><th>Chi nhánh</th><th>Lịch</th><th>Loại lương</th><th class="right">Mức lương</th><th>Trạng thái</th></tr></thead><tbody>' +
         rows.map(e => '<tr class="click" data-ma="' + esc(e.MaNV) + '"><td data-stop><input type="checkbox" data-pick="' + esc(e.MaNV) + '"' + (chon[e.MaNV] ? ' checked' : '') + '></td><td><b>' + esc(e.MaNV) + '</b></td><td>' + esc(e.HoTen) + vtBadge(e) + '</td><td>' + esc(e.ChucVu) + '</td><td>' +
           esc((branches.find(b => b.ID === e.ChiNhanh) || {}).TenChiNhanh || e.ChiNhanh) + '</td><td class="tiny">' + esc((scheds.find(x => x.ID === e.LichLamViec) || {}).TenLich || '<chưa chọn>') + '</td><td>' + esc(LOAI_LUONG[e.LoaiLuong] || '') + '</td><td class="right num">' + money(e.MucLuong) + '</td><td>' +
@@ -2437,9 +2439,15 @@ const TB_MAU = [
 let TB_GUI = 'ALL';
 async function aNotice() {
   try {
-    const [list, branches, sent] = await Promise.all([employees(), call('listBranches'), call('listNotices')]);
+    const [list, branches, sent, greetings] = await Promise.all([employees(), call('listBranches'), call('listNotices'), call('listGreetingDates')]);
     const act = list.filter(e => e.TrangThai !== 'NGHIVIEC');
     body().innerHTML = '<div class="row wrap between mb"><h2>Thông báo</h2></div>' +
+      '<div class="card"><div class="row between wrap"><div><h3>🎉 Lịch chúc mừng tự động</h3><div class="tiny muted">Tách biệt với Ngày lễ tính lương ×3. Sinh nhật lấy theo hồ sơ nhân viên.</div></div><span class="badge b-ok">Tự gửi hằng ngày</span></div>' +
+      '<div class="grid2 mt"><div><label class="f">Ngày chúc</label><input class="i" id="gcNgay" placeholder="MM-DD hoặc YYYY-MM-DD"></div><div><label class="f">Tiêu đề</label><input class="i" id="gcTieuDe" maxlength="120"></div></div>' +
+      '<label class="f">Nội dung lời chúc</label><textarea class="i" id="gcNoiDung" style="min-height:90px" placeholder="Có thể dùng [NĂM] trong nội dung…"></textarea>' +
+      '<div class="row wrap between mt"><label class="chk" style="margin:0"><input type="checkbox" id="gcBat" checked> Bật tự gửi</label><div class="row"><button class="btn light sm" id="gcMoi">Làm mới</button><button class="btn sm" id="gcLuu">Lưu ngày chúc</button></div></div>' +
+      '<div class="list mt">' + (greetings.length ? greetings.map(g => '<div class="it"><div class="grow"><b>' + esc(g.TieuDe) + '</b><div class="tiny muted">' + (g.Ngay ? esc(g.Ngay) : 'Chưa đặt ngày — nhập ngày dương lịch') + ' · ' + (g.LapLai === 'HANGNAM' ? 'Hằng năm' : 'Ngày cụ thể') + ' · ' + (g.Bat === 'CO' ? 'Đang bật' : 'Đang tắt') + '</div></div><button class="btn light sm" data-gcedit="' + esc(g.ID) + '">Sửa</button><button class="btn light sm" data-gcdel="' + esc(g.ID) + '" style="color:var(--bad)">Xóa</button></div>').join('') : '<div class="empty">Chưa có ngày chúc</div>') + '</div>' +
+      '<div class="tiny muted mt">Ngày lặp hằng năm nhập dạng MM-DD (ví dụ 03-08). Ngày âm lịch nhập ngày dương lịch cụ thể YYYY-MM-DD và cập nhật lại mỗi năm. Giáng sinh có thể bật/tắt. Lịch này chỉ gửi lời chúc, không tham gia tính lương ×3.</div></div>' +
       '<div class="card"><h3>Soạn thông báo mới</h3><div class="row wrap mt">' + TB_MAU.map((t, i) => '<button class="chip" data-mau="' + i + '">' + esc(t[0]) + '</button>').join('') + '</div>' +
       '<label class="f">Tiêu đề</label><input class="i" id="tbTD" maxlength="120" placeholder="VD: Lịch nghỉ Tết Nguyên đán 2027">' +
       '<label class="f">Nội dung</label><textarea class="i" id="tbND" style="min-height:120px" placeholder="Nội dung thông báo…"></textarea>' +
@@ -2453,6 +2461,17 @@ async function aNotice() {
           '<div class="nd cut">' + esc(t.NoiDung) + '</div>' +
           '<div class="row mt" style="gap:8px"><div style="flex:1;height:6px;background:var(--grey-soft);border-radius:3px;overflow:hidden"><div style="height:100%;width:' + (t.SoNguoi ? Math.round(t.DaDoc / t.SoNguoi * 100) : 0) + '%;background:var(--ok)"></div></div><span class="tiny"><b>' + t.DaDoc + '/' + t.SoNguoi + '</b> đã đọc</span>' +
           (t.ChuaDocTen.length ? '<span class="lnk tiny" data-who="' + esc(t.ID) + '">ai chưa đọc?</span>' : '') + '</div></div>').join('') : '<div class="empty">Chưa gửi thông báo nào</div>') + '</div>';
+    let editingGreeting = '';
+    const resetGreetingForm = () => { editingGreeting=''; $('#gcNgay').value=''; $('#gcTieuDe').value=''; $('#gcNoiDung').value=''; $('#gcBat').checked=true; $('#gcLuu').textContent='Lưu ngày chúc'; };
+    $('#gcMoi').onclick = resetGreetingForm;
+    $('#gcLuu').onclick = async () => {
+      const f={ID:editingGreeting,Ngay:$('#gcNgay').value.trim(),TieuDe:$('#gcTieuDe').value.trim(),NoiDung:$('#gcNoiDung').value.trim(),Bat:$('#gcBat').checked};
+      if(!f.TieuDe||!f.NoiDung) return toast('Nhập tiêu đề và nội dung lời chúc','err');
+      try { await call('saveGreetingDate',f); toast('Đã lưu lịch chúc mừng','ok'); aNotice(); }
+      catch(e){fail(e);}
+    };
+    $$('[data-gcedit]').forEach(b=>b.onclick=()=>{const g=greetings.find(x=>x.ID===b.dataset.gcedit);if(!g)return;editingGreeting=g.ID;$('#gcNgay').value=g.Ngay||'';$('#gcTieuDe').value=g.TieuDe||'';$('#gcNoiDung').value=g.NoiDung||'';$('#gcBat').checked=g.Bat==='CO';$('#gcLuu').textContent='Cập nhật ngày chúc';$('#gcNgay').scrollIntoView({behavior:'smooth',block:'center'});});
+    $$('[data-gcdel]').forEach(b=>b.onclick=async()=>{if(!(await confirmBox('Xóa ngày chúc này?','Xóa')))return;try{await call('deleteGreetingDate',{ID:b.dataset.gcdel});toast('Đã xóa ngày chúc','ok');aNotice();}catch(e){fail(e);}});
     const pickHtml = () => {
       if (TB_GUI === 'QUYEN') return '<div class="row wrap">' + VAITRO_OPTS.map(o => '<label class="chk" style="margin:0"><input type="checkbox" data-q="' + o[0] + '"> ' + esc(o[1]) + '</label>').join('') + '</div>';
       if (TB_GUI === 'CT') return '<div class="row wrap">' + branches.map(b => '<label class="chk" style="margin:0"><input type="checkbox" data-ct="' + esc(b.ID) + '"> ' + esc(b.TenChiNhanh) + '</label>').join('') + '</div>';
