@@ -398,7 +398,7 @@ function busy(on) { pending += on ? 1 : -1; $('#loading').classList.toggle('hidd
 /* Bộ nhớ đệm: trang đã xem sẽ hiện ngay lập tức, dữ liệu mới được tải ngầm rồi cập nhật */
 const READS = ['today', 'myAttendance', 'myRequests', 'myPayslips', 'dashboard', 'listEmployees', 'listAttendance', 'listRequests',
   'getAdjustments', 'getPayroll', 'getSettings', 'listBranches', 'listHolidays', 'listSchedules',
-  'adminTodo', 'listNotices', 'debtList', 'netOT', 'listFaces', 'otSites'];
+  'adminTodo', 'listNotices', 'debtList', 'netOT', 'listFaces', 'otSites', 'listGreetings'];
 // Thao tác không đổi dữ liệu (không cần xóa đệm)
 const NOWRITE = ['info', 'me', 'login', 'getPhoto', 'logout', 'debts', 'myProfile', 'netPC', 'exportBank', 'exportPayroll', 'exportAttendance', 'myNotices', 'readNotices', 'resetPassword', 'attachPhoto'];
 // Ghi dữ liệu → chỉ làm mới các trang bị ảnh hưởng ('*' = mọi trang)
@@ -418,6 +418,7 @@ const AFFECT = {
   calcPayroll: AF_LUONG, publishPayroll: AF_LUONG, setPaid: AF_LUONG,
   addDebt: AF_NO, payDebt: AF_NO, editDebt: AF_NO, deleteDebt: AF_NO,
   sendNotice: ['listNotices', 'adminTodo'], deleteNotice: ['listNotices', 'adminTodo'],
+  saveGreeting: ['listGreetings', 'listNotices'], toggleGreeting: ['listGreetings'], deleteGreeting: ['listGreetings'], runGreetings: ['listGreetings', 'listNotices', 'adminTodo'],
   decideFace: ['listFaces', 'dashboard', 'adminTodo', 'listEmployees'], resetFace: ['listFaces', 'dashboard', 'adminTodo', 'listEmployees'],
   saveBranch: ['listBranches', 'dashboard', 'listAttendance', 'listRequests', 'otSites', 'adminTodo'],
   deleteBranch: ['listBranches', 'dashboard', 'listAttendance', 'listRequests', 'otSites', 'adminTodo'],
@@ -778,7 +779,7 @@ function startApp() {
   TODO = null;
   go(isAdmin() ? 'admin' : 'checkin');
   if (isAdmin()) loadTodo(); // cùng nhịp với Tổng quan → gộp 1 lần gọi
-  if (ME.PhaiDoiMK) forceChangePassword();
+  if (ME.PhaiDoiMK) forceChangePassword(); else if (ME.ThieuHoSo) setTimeout(profilePrompt, 800);
   NOTI = null; $('#bellN').classList.add('hidden');
   clearInterval(notiTimer); notiTimer = setInterval(() => { if (TOKEN && !document.hidden) { loadNotices(); if (isAdmin()) loadTodo(true); } }, 180000);
   setTimeout(() => loadNotices(true), 1200);
@@ -1644,7 +1645,7 @@ function vAccount() {
       (pf.XacNhanSTK ? '<div class="tiny muted mt">Số tài khoản đã được xác nhận. Muốn đổi, hãy nhờ quản lý sửa giúp.</div>' : '') +
       '<button class="btn block mt2" id="pfSave">Lưu thông tin</button>';
     $('#pfSave', c).onclick = async () => {
-      try { await call('saveMyProfile', formData(c)); toast('Đã lưu thông tin', 'ok'); ME.ThieuSTK = !formData(c).SoTaiKhoan; store.set('cc_me', JSON.stringify({ user: ME, info: INFO })); vAccount(); } catch (e) { fail(e); }
+      try { await call('saveMyProfile', formData(c)); toast('Đã lưu thông tin', 'ok'); { const fd = formData(c); ME.ThieuSTK = !fd.SoTaiKhoan; ME.ThieuHoSo = !fd.SoTaiKhoan || !fd.CCCD || !fd.NgaySinh; } store.set('cc_me', JSON.stringify({ user: ME, info: INFO })); vAccount(); } catch (e) { fail(e); }
     };
   }).catch(() => {});
   call('today').then(t => {
@@ -1659,7 +1660,7 @@ function vAccount() {
 }
 function forceChangePassword() {
   const m = modal('Đặt mật khẩu mới', '<p class="small muted">Đây là lần đầu bạn đăng nhập (hoặc mật khẩu vừa được đặt lại). Hãy đổi mật khẩu để bảo mật thông tin lương.</p>' + pwFormHtml(), { noClose: true });
-  bindPw(m, closeModal);
+  bindPw(m, () => { closeModal(); if (ME.ThieuHoSo) setTimeout(profilePrompt, 300); });
 }
 
 /* ===================== QUẢN LÝ ===================== */
@@ -1674,6 +1675,7 @@ const VAITRO_HELP = {
 };
 const vaiTro = e => e.VaiTro === 'ADMIN' ? 'ADMIN' : (e.VaiTro === 'DIEUHANH' || String(e.QuyenTangCa || '').trim()) ? 'DIEUHANH' : 'NV';
 const vtBadge = e => { const v = vaiTro(e); return v === 'ADMIN' ? ' <span class="badge b-pri">Quản trị</span>' : v === 'DIEUHANH' ? ' <span class="badge b-warn">Điều hành</span>' : ''; };
+const thieuHS = e => e.TrangThai !== 'NGHIVIEC' && !(e.VaiTro === 'ADMIN' && !n(e.MucLuong)) && (!e.SoTaiKhoan || !e.CCCD || !e.NgaySinh) ? ' <span class="badge b-warn" title="Thiếu STK / CCCD / ngày sinh">thiếu hồ sơ</span>' : '';
 let ADMIN_SUB = 'dash';
 let EMP_CACHE = null;
 let PAYMODE = 'DAIVIET';
@@ -1849,9 +1851,9 @@ async function aEmp() {
     };
     const render = () => {
       const q = ($('#eSearch').value || '').toLowerCase();
-      const rows = list.filter(e => (showQuit || e.TrangThai !== 'NGHIVIEC') && (!q || (e.HoTen + ' ' + e.MaNV + ' ' + e.SoDienThoai).toLowerCase().includes(q)));
+      const rows = list.filter(e => (showQuit ? e.TrangThai === 'NGHIVIEC' : e.TrangThai !== 'NGHIVIEC') && (!q || (e.HoTen + ' ' + e.MaNV + ' ' + e.SoDienThoai).toLowerCase().includes(q)));
       $('#eList').innerHTML = rows.length ? '<div class="tbl-wrap"><table class="t"><thead><tr><th style="width:34px"><input type="checkbox" id="eAll" title="Chọn tất cả đang hiện"></th><th>Mã</th><th>Họ tên</th><th>Chức vụ</th><th>Chi nhánh</th><th>Lịch</th><th>Loại lương</th><th class="right">Mức lương</th><th>Trạng thái</th></tr></thead><tbody>' +
-        rows.map(e => '<tr class="click" data-ma="' + esc(e.MaNV) + '"><td data-stop><input type="checkbox" data-pick="' + esc(e.MaNV) + '"' + (chon[e.MaNV] ? ' checked' : '') + '></td><td><b>' + esc(e.MaNV) + '</b></td><td>' + esc(e.HoTen) + vtBadge(e) + '</td><td>' + esc(e.ChucVu) + '</td><td>' +
+        rows.map(e => '<tr class="click" data-ma="' + esc(e.MaNV) + '"><td data-stop><input type="checkbox" data-pick="' + esc(e.MaNV) + '"' + (chon[e.MaNV] ? ' checked' : '') + '></td><td><b>' + esc(e.MaNV) + '</b></td><td>' + esc(e.HoTen) + vtBadge(e) + thieuHS(e) + '</td><td>' + esc(e.ChucVu) + '</td><td>' +
           esc((branches.find(b => b.ID === e.ChiNhanh) || {}).TenChiNhanh || e.ChiNhanh) + '</td><td class="tiny">' + esc((scheds.find(x => x.ID === e.LichLamViec) || {}).TenLich || '<chưa chọn>') + '</td><td>' + esc(LOAI_LUONG[e.LoaiLuong] || '') + '</td><td class="right num">' + money(e.MucLuong) + '</td><td>' +
           (e.TrangThai === 'NGHIVIEC' ? '<span class="badge b-grey">Nghỉ việc</span>' : e.DaDoiMK ? '<span class="badge b-ok">Đang làm</span>' : '<span class="badge b-warn">Chưa đăng nhập</span>') +
           (e.TrangThai !== 'NGHIVIEC' && dangThuViec(e) ? ' <span class="badge b-pri">Thử việc đến ' + esc(vnDate(e.ThuViecDen).slice(0, 5)) + '</span>' : '') + '</td></tr>').join('') +
@@ -1863,7 +1865,7 @@ async function aEmp() {
     };
     const active = list.filter(e => e.TrangThai !== 'NGHIVIEC').length;
     body().innerHTML = '<div class="row wrap between mb"><h2>Nhân viên <span class="muted small">(' + active + ' đang làm)</span></h2><button class="btn" id="eAdd">+ Thêm nhân viên</button></div>' +
-      '<div class="card"><div class="row wrap mb"><input class="i grow" id="eSearch" placeholder="Tìm theo tên, mã, SĐT"><label class="chk" style="margin:0"><input type="checkbox" id="eQuit"> Hiện người nghỉ việc</label></div>' +
+      '<div class="card"><div class="row wrap mb"><input class="i grow" id="eSearch" placeholder="Tìm theo tên, mã, SĐT"><label class="chk" style="margin:0"><input type="checkbox" id="eQuit"> Chỉ xem người đã nghỉ việc</label></div>' +
       '<div id="eBulk" class="gps bad mb hidden" style="align-items:center"><span class="grow">Đã chọn <b>0</b> người</span><button class="btn light sm" id="eBulkNo">Bỏ chọn</button><button class="btn bad sm" id="eBulkDel">Xóa những người đã chọn</button></div>' +
       '<div id="eList"></div></div>' +
       '<div class="card flat small muted">Mẹo: nhập nhanh nhiều người bằng cách dán thẳng vào sheet <b>NhanVien</b> trong Google Sheet (bỏ trống cột MatKhauHash). Mỗi người đăng nhập lần đầu bằng mật khẩu mặc định và sẽ được yêu cầu đổi.</div>';
@@ -1928,10 +1930,12 @@ function empForm(e, branches) {
     '<h3 class="mt2">Lương NET</h3><div class="small muted">Chỉ điền nếu người này nhận lương NET (đủ công cầm về đúng số này, công ty chịu BH + thuế). Bấm nút để app dò phụ cấp giùm.</div>' +
     '<div class="row wrap" style="align-items:flex-end">' + inp('LuongNET', 'Lương NET / tháng (đ)', 'text', 'inputmode="numeric" data-money data-blank placeholder="trống = không phải lương NET"') +
       '<button type="button" class="btn ghost" id="netCalc">Tính phụ cấp giùm</button></div><div class="small mt" id="netMsg"></div>' +
-    '<h3 class="mt2">Thông tin cá nhân & tài khoản nhận lương</h3><div class="grid2">' +
+    '<div class="row between mt2"><h3>Thông tin cá nhân & tài khoản nhận lương</h3>' + (isNew ? '' : '<button type="button" class="btn ghost sm" id="piEdit">✏️ Sửa</button>') + '</div>' +
+    '<div class="tiny muted mb" id="piNote">' + (isNew ? 'Có thể nhập luôn, hoặc để nhân viên tự khai khi đăng nhập lần đầu.' : 'Nhân viên tự khai trong app. Dữ liệu dùng chung ở mọi nơi; chỉ bấm "Sửa" khi cần chỉnh cho đúng.') + '</div>' +
+    '<div id="piBox"><div class="grid2">' +
       inp('SoTaiKhoan', 'Số tài khoản', 'text', 'inputmode="numeric"') + inp('NganHang', 'Ngân hàng', 'text', 'placeholder="Eximbank"') +
       inp('CCCD', 'Số CCCD', 'text', 'inputmode="numeric"') + inp('NgayCapCCCD', 'Ngày cấp CCCD', 'date') +
-      inp('NoiCapCCCD', 'Nơi cấp') + inp('NgaySinh', 'Ngày sinh', 'date') + '</div>' + inp('DiaChi', 'Địa chỉ thường trú') +
+      inp('NoiCapCCCD', 'Nơi cấp') + inp('NgaySinh', 'Ngày sinh', 'date') + '</div>' + inp('DiaChi', 'Địa chỉ thường trú') + '</div>' +
     '<label class="chk"><input type="checkbox" name="XacNhanSTK"' + (e.XacNhanSTK === 'CO' ? ' checked' : '') + '> <span>Đã kiểm tra, <b>xác nhận số tài khoản</b> (nhân viên không tự sửa được nữa)</span></label>' +
     '<label class="chk"><input type="checkbox" name="NghiNgang"' + (e.NghiNgang === 'CO' ? ' checked' : '') + '> <span><b>Nghỉ ngang</b> (không báo trước) – tháng cuối gợi ý trừ thêm phần BH công ty đã đóng, quản lý duyệt ở trang Tính lương</span></label>' +
     (isNew ? '' : '<h3 class="mt2">Sổ nợ vay công ty</h3><div id="noBox" class="small muted">Đang tải…</div>') +
@@ -1953,6 +1957,17 @@ function empForm(e, branches) {
     } catch (e) { fail(e); }
   };
   if (!isNew) debtPanel(m, e.MaNV);
+  if (!isNew) {
+    // Thông tin cá nhân: khóa sẵn, bấm "Sửa" mới chỉnh được (tránh lỡ tay sửa dữ liệu nhân viên tự khai)
+    const miss = [['SoTaiKhoan', 'STK'], ['CCCD', 'CCCD'], ['NgaySinh', 'ngày sinh'], ['DiaChi', 'địa chỉ']].filter(x => !e[x[0]]).map(x => x[1]);
+    $$('#piBox input', m).forEach(el => { el.readOnly = true; el.style.background = '#f3f5f9'; });
+    $('#piEdit', m).onclick = () => {
+      $$('#piBox input', m).forEach(el => { el.readOnly = false; el.style.background = ''; });
+      $('#piEdit', m).classList.add('hidden');
+      const f0 = $('#piBox input', m); if (f0) f0.focus();
+    };
+    if (miss.length) $('#piNote', m).innerHTML = '<span class="badge b-warn">Nhân viên chưa khai: ' + esc(miss.join(', ')) + '</span> · bấm "Sửa" để tự nhập hộ.';
+  }
   $('#tvGoiY', m).onclick = () => {
     const vao = $('[name=NgayVaoLam]', m).value;
     if (!vao) return toast('Nhập ngày vào làm trước', 'err');
@@ -2439,7 +2454,7 @@ async function aNotice() {
   try {
     const [list, branches, sent] = await Promise.all([employees(), call('listBranches'), call('listNotices')]);
     const act = list.filter(e => e.TrangThai !== 'NGHIVIEC');
-    body().innerHTML = '<div class="row wrap between mb"><h2>Thông báo</h2></div>' +
+    body().innerHTML = '<div class="row wrap between mb"><h2>Thông báo</h2><button class="btn light" id="tbGreet">🎉 Lời chúc tự động</button></div>' +
       '<div class="card"><h3>Soạn thông báo mới</h3><div class="row wrap mt">' + TB_MAU.map((t, i) => '<button class="chip" data-mau="' + i + '">' + esc(t[0]) + '</button>').join('') + '</div>' +
       '<label class="f">Tiêu đề</label><input class="i" id="tbTD" maxlength="120" placeholder="VD: Lịch nghỉ Tết Nguyên đán 2027">' +
       '<label class="f">Nội dung</label><textarea class="i" id="tbND" style="min-height:120px" placeholder="Nội dung thông báo…"></textarea>' +
@@ -2476,6 +2491,7 @@ async function aNotice() {
     $$('#tbGui .chip').forEach(c => c.onclick = () => { TB_GUI = c.dataset.g; $$('#tbGui .chip').forEach(x => x.classList.toggle('on', x === c)); drawPick(); });
     $$('[data-mau]').forEach(c => c.onclick = () => { const t = TB_MAU[c.dataset.mau]; $('#tbTD').value = t[1]; $('#tbND').value = t[2]; $('#tbND').focus(); });
     drawPick();
+    $('#tbGreet').onclick = greetManager;
     $('#tbSend').onclick = async () => {
       const t = target();
       if (!$('#tbTD').value.trim() || !$('#tbND').value.trim()) return toast('Nhập tiêu đề và nội dung', 'err');
@@ -2704,6 +2720,90 @@ async function sHoliday() {
   } catch (e) { fail(e); }
 }
 
+
+/* ===================== LỜI CHÚC TỰ ĐỘNG + HỒ SƠ NHÂN VIÊN (dán TRƯỚC dòng boot(); ở cuối file) ===================== */
+
+/* Quản lý: bảng lời chúc tự động (sinh nhật + ngày lễ). KHÔNG liên quan ngày lễ tính lương ×3 */
+async function greetManager() {
+  let rows;
+  try { rows = await call('listGreetings'); } catch (e) { return fail(e); }
+  const lb = r => {
+    if (r.Loai === 'SINHNHAT') return 'Đúng ngày sinh nhật của từng người (lấy từ Ngày sinh trong hồ sơ)';
+    const p = String(r.Ngay).split('-');
+    return p[1] + '/' + p[0] + (r.Loai === 'AM' ? ' âm lịch' : ' hằng năm') + (r.Ke ? ' · sắp tới ' + vnDate(r.Ke) : '');
+  };
+  const m = modal('🎉 Lời chúc tự động',
+    '<div class="small muted mb">App tự đăng thông báo chúc mừng lúc 7h sáng đúng ngày. Đây chỉ là <b>lời chúc</b>, không phải ngày nghỉ lễ tính lương ×3 (ngày lễ tính lương ở Cài đặt → Ngày lễ).</div>' +
+    '<div class="list">' + rows.map(r => '<div class="it" style="align-items:flex-start"><label class="chk" style="margin:4px 0 0"><input type="checkbox" data-gt="' + esc(r.ID) + '"' + (r.BatTat === 'KHONG' ? '' : ' checked') + '></label>' +
+      '<div class="grow"><b>' + esc(r.Loai === 'SINHNHAT' ? '🎂 Sinh nhật nhân viên' : r.Ten) + '</b><div class="tiny muted">' + esc(lb(r)) + '</div><div class="tiny">' + esc(r.TieuDe) + '</div></div>' +
+      '<button class="btn ghost sm" data-ge="' + esc(r.ID) + '">Sửa</button></div>').join('') + '</div>' +
+    '<div class="row wrap mt2"><button class="btn" id="gtAdd">+ Thêm ngày chúc</button><button class="btn light" id="gtRun">Gửi lời chúc hôm nay ngay</button></div>' +
+    '<div class="tiny muted mt">Tắt/bật bằng ô tích bên trái. Mỗi lời chúc chỉ đăng 1 lần mỗi năm, bấm "Gửi ngay" nhiều lần cũng không bị trùng.</div>', { wide: true });
+  $$('[data-gt]', m).forEach(cb => cb.onchange = async () => {
+    try { await call('toggleGreeting', { ID: cb.dataset.gt, BatTat: cb.checked }); } catch (e) { fail(e); cb.checked = !cb.checked; }
+  });
+  $$('[data-ge]', m).forEach(b => b.onclick = () => greetForm(rows.find(r => r.ID === b.dataset.ge)));
+  $('#gtAdd', m).onclick = () => greetForm(null);
+  $('#gtRun', m).onclick = async () => {
+    try { const k = await call('runGreetings'); toast(k ? 'Đã đăng ' + k + ' lời chúc' : 'Hôm nay không có lời chúc nào mới (hoặc đã đăng rồi)', k ? 'ok' : ''); if (k) aNotice(); } catch (e) { fail(e); }
+  };
+}
+
+function greetForm(r) {
+  const isNew = !r, sn = !!r && r.Loai === 'SINHNHAT';
+  r = r || { Loai: 'DUONG', BatTat: 'CO', MucDo: 'THUONG', TieuDe: '', NoiDung: '' };
+  const p = String(r.Ngay || '').split('-');
+  const m = modal(isNew ? 'Thêm ngày chúc' : 'Sửa lời chúc',
+    (sn ? '<div class="gps" style="margin-top:0"><span>Gõ <b>[TÊN NHÂN VIÊN]</b> hoặc <b>[Tên nhân viên]</b> ở chỗ cần chèn tên người sinh nhật.</span></div>' :
+      '<label class="f">Tên ngày (để quản lý nhận biết)</label><input class="i" name="Ten" value="' + esc(r.Ten || '') + '" placeholder="VD: Tết Trung thu">' +
+      '<div class="grid3"><div><label class="f">Loại ngày</label><select class="i" name="Loai"><option value="DUONG"' + (r.Loai === 'DUONG' ? ' selected' : '') + '>Dương lịch</option><option value="AM"' + (r.Loai === 'AM' ? ' selected' : '') + '>Âm lịch</option></select></div>' +
+      '<div><label class="f">Ngày</label><input class="i" type="number" name="Ngay" min="1" max="31" value="' + (p[1] ? Number(p[1]) : '') + '"></div>' +
+      '<div><label class="f">Tháng</label><input class="i" type="number" name="Thang" min="1" max="12" value="' + (p[0] ? Number(p[0]) : '') + '"></div></div>' +
+      '<div class="tiny muted">Lặp lại mỗi năm. Dùng [NĂM] hoặc [Năm Âm lịch] trong lời chúc để app tự điền năm.</div>') +
+    '<label class="f">Tiêu đề</label><input class="i" name="TieuDe" maxlength="120" value="' + esc(r.TieuDe) + '">' +
+    '<label class="f">Nội dung lời chúc</label><textarea class="i" name="NoiDung" style="min-height:170px">' + esc(r.NoiDung) + '</textarea>' +
+    '<label class="chk"><input type="checkbox" name="BatTat"' + (r.BatTat === 'KHONG' ? '' : ' checked') + '> Bật tự động gửi</label>' +
+    '<label class="chk"><input type="checkbox" name="MucDo"' + (r.MucDo === 'QUANTRONG' ? ' checked' : '') + '> <b>Quan trọng</b> (hiện cửa sổ ngay khi mở app)</label>' +
+    (sn ? '<label class="chk"><input type="checkbox" name="DoiTuong"' + (r.DoiTuong === 'NV' ? ' checked' : '') + '> Chỉ gửi riêng cho người sinh nhật (không gửi cả công ty)</label>' : '') +
+    '<div class="row mt2">' + (isNew || sn ? '' : '<button class="btn light" id="gfDel" style="color:var(--bad)">Xóa</button>') + '<button class="btn light" id="gfBack">Quay lại</button><span class="grow"></span><button class="btn" id="gfSave">Lưu</button></div>', { wide: true });
+  $('#gfBack', m).onclick = greetManager;
+  $('#gfSave', m).onclick = async () => {
+    const f = formData(m); f.ID = r.ID;
+    if (sn) f.DoiTuong = f.DoiTuong ? 'NV' : 'ALL';
+    try { await call('saveGreeting', f); toast('Đã lưu lời chúc', 'ok'); greetManager(); } catch (e) { fail(e); }
+  };
+  if ($('#gfDel', m)) $('#gfDel', m).onclick = async () => {
+    if (!(await confirmBox('Xóa ngày chúc "' + r.Ten + '"?', 'Xóa'))) return greetForm(r);
+    try { await call('deleteGreeting', { ID: r.ID }); toast('Đã xóa', 'ok'); greetManager(); } catch (e) { fail(e); }
+  };
+}
+
+/* Nhân viên: nhắc tự khai hồ sơ (STK, CCCD, ngày sinh…) lần đầu dùng app. Quản lý/kế toán chỉ xem & sửa khi sai */
+let PF_ASKED = false;
+function profilePrompt() {
+  if (PF_ASKED || !ME || !TOKEN || ME.PhaiDoiMK || $('#modalRoot').children.length) return;
+  PF_ASKED = true;
+  call('myProfile').then(pf => {
+    const inp = (k, label, type, extra) => '<div><label class="f">' + label + '</label><input class="i" name="' + k + '" type="' + (type || 'text') + '" value="' + esc(pf[k] || '') + '" ' + (extra || '') + '></div>';
+    const m = modal('Hoàn thiện hồ sơ của bạn',
+      '<p class="small muted">Điền một lần để kế toán chuyển lương đúng tài khoản và công ty chúc mừng sinh nhật bạn. Chỉ quản lý xem được.</p>' +
+      '<div class="grid2">' + inp('SoTaiKhoan', 'Số tài khoản nhận lương', 'text', 'inputmode="numeric"') + inp('NganHang', 'Ngân hàng') +
+      inp('CCCD', 'Số CCCD', 'text', 'inputmode="numeric"') + inp('NgaySinh', 'Ngày sinh', 'date') +
+      inp('NgayCapCCCD', 'Ngày cấp CCCD', 'date') + inp('NoiCapCCCD', 'Nơi cấp') + '</div>' +
+      inp('DiaChi', 'Địa chỉ thường trú') + inp('SoDienThoai', 'Số điện thoại', 'tel') +
+      '<div class="row mt2"><button class="btn light" id="pfLater">Để sau</button><span class="grow"></span><button class="btn" id="pfOk">Lưu hồ sơ</button></div>');
+    $('#pfLater', m).onclick = closeModal;
+    $('#pfOk', m).onclick = async () => {
+      const f = formData(m);
+      try {
+        await call('saveMyProfile', f);
+        ME.ThieuSTK = !f.SoTaiKhoan; ME.ThieuHoSo = !f.SoTaiKhoan || !f.CCCD || !f.NgaySinh;
+        store.set('cc_me', JSON.stringify({ user: ME, info: INFO }));
+        closeModal(); toast('Đã lưu hồ sơ', 'ok');
+      } catch (e) { fail(e); }
+    };
+  }).catch(() => { PF_ASKED = false; });
+}
 boot();
 </script>
 </body>
