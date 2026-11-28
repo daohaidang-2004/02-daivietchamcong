@@ -285,7 +285,8 @@ table.t input.i{min-height:34px;padding:6px 8px;font-size:13px;min-width:110px}
 .cam .msg.ok{color:var(--ok)} .cam .msg.bad{color:#d07b00}
 .cam .vwrap{position:relative;width:70vw;max-width:290px;height:93vw;max-height:387px;border-radius:50%;overflow:hidden;margin:12px auto 8px;background:#111;flex:none;-webkit-mask-image:-webkit-radial-gradient(white,black);transform:translateZ(0)}
 .cam canvas.cv{position:absolute;top:0;left:0;width:100%;height:100%;display:block}
-.cam video.vsrc{position:fixed;left:0;top:0;width:2px;height:2px;opacity:.01;pointer-events:none;z-index:-1}
+.cam video.vsrc{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;opacity:0;pointer-events:none}
+.cam .inapp{margin-top:8px;background:var(--warn-soft);color:var(--warn);border-radius:12px;padding:8px 10px;font-size:13px;max-width:360px}
 .cam .oval{position:absolute;top:0;left:0;right:0;bottom:0;border-radius:50%;border:7px solid #d7dede;transition:border-color .2s;pointer-events:none}
 .cam .oval.ok{border-color:var(--ok)} .cam .oval.bad{border-color:#f0a400}
 .cam .arrow{font-size:30px;color:var(--pri);height:34px;animation:sway 1.2s ease-in-out infinite}
@@ -860,12 +861,11 @@ function faceScan(opts) {
     el.className = 'cam';
     // Nền trắng: màn hình sáng chiếu vào mặt như đèn, quét được cả chỗ tối
     el.innerHTML = '<div class="ctop"><h3>' + esc(opts.title || 'Quét khuôn mặt') + '</h3><div class="steps"><i class="on"></i><i></i><i></i></div><div class="stepTxt">BƯỚC 1/3 · NHÌN THẲNG</div></div>' +
-      '<video class="vsrc" playsinline webkit-playsinline muted autoplay></video>' +
-      // Không hiện thẳng <video>: Zalo/iPhone vẽ video bằng lớp riêng, bỏ qua khung tròn → bị lật + phóng to. Vẽ lại lên canvas.
-      '<div class="vwrap"><canvas class="cv"></canvas><div class="oval"></div></div>' +
+      // Video nằm trong khung nhưng ẩn; hình hiển thị được vẽ lại lên canvas (soi gương, đúng khung)
+      '<div class="vwrap"><video class="vsrc" playsinline webkit-playsinline muted autoplay></video><canvas class="cv"></canvas><div class="oval"></div></div>' +
       '<div class="msg">Đang mở camera…</div><div class="arrow" style="visibility:hidden">⟷</div>' +
       '<div class="sub">Đưa mặt vào giữa vòng tròn · bỏ nón, khẩu trang, kính râm</div>' +
-      (/Zalo|FBAN|FBAV|Instagram/i.test(navigator.userAgent) ? '<div class="tiny muted" style="margin-top:6px">Đang mở trong Zalo. Nếu quét vẫn khó: bấm <b>⋯</b> góc trên → <b>Mở bằng trình duyệt</b></div>' : '') +
+      (/Zalo|FBAN|FBAV|Instagram/i.test(navigator.userAgent) ? '<div class="inapp">Zalo trên iPhone hay làm camera bị đen / phóng to. Nếu bị: bấm <b>⋯</b> góc trên → <b>Mở bằng trình duyệt</b>, hoặc <b class="lnk" data-cplink>sao chép link</b> rồi dán vào Safari.</div>' : '') +
       '<div class="cinfo"><div class="av">' + esc(initials(ME ? ME.HoTen : '')) + '</div><div class="grow"><b>' + esc(ME ? ME.HoTen : '') + '</b><div class="tiny muted">' + esc(ME ? ME.MaNV : '') + ' · ' + new Date().toTimeString().slice(0, 5) + '</div></div></div>' +
       '<div class="bottom"><button class="btn light">Hủy</button></div>';
     document.body.appendChild(el);
@@ -887,6 +887,8 @@ function faceScan(opts) {
       err ? reject(err) : resolve(val);
     };
     $('.btn', el).onclick = () => finish(null, null);
+    const cp = $('[data-cplink]', el);
+    if (cp) cp.onclick = () => { const u = location.href.split('#')[0]; (navigator.clipboard ? navigator.clipboard.writeText(u) : Promise.reject()).then(() => toast('Đã sao chép link, mở Safari và dán vào', 'ok'), () => prompt('Sao chép link này rồi mở bằng Safari:', u)); };
     const sleep = ms => new Promise(r => setTimeout(r, ms));
 
     (async () => {
