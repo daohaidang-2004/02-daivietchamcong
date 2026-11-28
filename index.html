@@ -283,9 +283,10 @@ table.t input.i{min-height:34px;padding:6px 8px;font-size:13px;min-width:110px}
 .cam .stepTxt{font-size:12px;font-weight:700;letter-spacing:.6px;color:var(--muted)}
 .cam .msg{font-size:21px;font-weight:700;margin:6px 0 2px;min-height:30px;color:var(--ink)}
 .cam .msg.ok{color:var(--ok)} .cam .msg.bad{color:#d07b00}
-.cam .vwrap{position:relative;width:min(70vw,290px);aspect-ratio:3/4;border-radius:50%;overflow:hidden;margin:12px auto 8px;background:#111;flex:none}
-.cam video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
-.cam .oval{position:absolute;inset:0;border-radius:50%;border:7px solid #d7dede;transition:border-color .2s;pointer-events:none}
+.cam .vwrap{position:relative;width:70vw;max-width:290px;height:93vw;max-height:387px;border-radius:50%;overflow:hidden;margin:12px auto 8px;background:#111;flex:none;-webkit-mask-image:-webkit-radial-gradient(white,black);transform:translateZ(0)}
+.cam canvas.cv{position:absolute;top:0;left:0;width:100%;height:100%;display:block}
+.cam video.vsrc{position:fixed;left:0;top:0;width:2px;height:2px;opacity:.01;pointer-events:none;z-index:-1}
+.cam .oval{position:absolute;top:0;left:0;right:0;bottom:0;border-radius:50%;border:7px solid #d7dede;transition:border-color .2s;pointer-events:none}
 .cam .oval.ok{border-color:var(--ok)} .cam .oval.bad{border-color:#f0a400}
 .cam .arrow{font-size:30px;color:var(--pri);height:34px;animation:sway 1.2s ease-in-out infinite}
 @keyframes sway{0%,100%{transform:translateX(-14px)}50%{transform:translateX(14px)}}
@@ -859,9 +860,12 @@ function faceScan(opts) {
     el.className = 'cam';
     // Nền trắng: màn hình sáng chiếu vào mặt như đèn, quét được cả chỗ tối
     el.innerHTML = '<div class="ctop"><h3>' + esc(opts.title || 'Quét khuôn mặt') + '</h3><div class="steps"><i class="on"></i><i></i><i></i></div><div class="stepTxt">BƯỚC 1/3 · NHÌN THẲNG</div></div>' +
-      '<div class="vwrap"><video playsinline muted autoplay></video><div class="oval"></div></div>' +
+      '<video class="vsrc" playsinline webkit-playsinline muted autoplay></video>' +
+      // Không hiện thẳng <video>: Zalo/iPhone vẽ video bằng lớp riêng, bỏ qua khung tròn → bị lật + phóng to. Vẽ lại lên canvas.
+      '<div class="vwrap"><canvas class="cv"></canvas><div class="oval"></div></div>' +
       '<div class="msg">Đang mở camera…</div><div class="arrow" style="visibility:hidden">⟷</div>' +
       '<div class="sub">Đưa mặt vào giữa vòng tròn · bỏ nón, khẩu trang, kính râm</div>' +
+      (/Zalo|FBAN|FBAV|Instagram/i.test(navigator.userAgent) ? '<div class="tiny muted" style="margin-top:6px">Đang mở trong Zalo. Nếu quét vẫn khó: bấm <b>⋯</b> góc trên → <b>Mở bằng trình duyệt</b></div>' : '') +
       '<div class="cinfo"><div class="av">' + esc(initials(ME ? ME.HoTen : '')) + '</div><div class="grow"><b>' + esc(ME ? ME.HoTen : '') + '</b><div class="tiny muted">' + esc(ME ? ME.MaNV : '') + ' · ' + new Date().toTimeString().slice(0, 5) + '</div></div></div>' +
       '<div class="bottom"><button class="btn light">Hủy</button></div>';
     document.body.appendChild(el);
@@ -889,14 +893,42 @@ function faceScan(opts) {
       try {
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error('Trình duyệt này không mở được camera. Hãy dùng Chrome (Android) hoặc Safari (iPhone).');
         const modelP = loadFaceApi();
-        try {
-          stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 480 }, height: { ideal: 640 } }, audio: false });
-        } catch (e) {
-          throw new Error(e && e.name === 'NotAllowedError' ? 'Bạn chưa cho phép dùng camera. Vào cài đặt trình duyệt, cho phép Camera cho trang này rồi thử lại.' : 'Không mở được camera trước. Thử đóng các app đang dùng camera rồi thử lại.');
+        // Không ép khung dọc: trong Zalo camera trả khung ngang → bị cắt giữa = phóng to
+        let lastErr = null;
+        for (const v of [{ facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }, { facingMode: 'user' }, true]) {
+          try { stream = await navigator.mediaDevices.getUserMedia({ video: v, audio: false }); break; }
+          catch (e) { lastErr = e; if (e && e.name === 'NotAllowedError') break; }
         }
-        if (done) return;
+        if (!stream) throw new Error(lastErr && lastErr.name === 'NotAllowedError' ? 'Bạn chưa cho phép dùng camera. Vào cài đặt trình duyệt, cho phép Camera cho trang này rồi thử lại.' : 'Không mở được camera trước. Thử đóng các app đang dùng camera rồi thử lại.');
+        if (done) { stream.getTracks().forEach(t => t.stop()); return; }
+        // Máy/webview có zoom sẵn: đưa về mức nhỏ nhất
+        try {
+          const tr = stream.getVideoTracks()[0], cp = tr.getCapabilities ? tr.getCapabilities() : {};
+          if (cp.zoom) await tr.applyConstraints({ advanced: [{ zoom: cp.zoom.min }] });
+        } catch (e) {}
         video.srcObject = stream;
+        const fit = () => fitCamFrame(el, video);
+        video.addEventListener('loadedmetadata', fit);
+        video.addEventListener('resize', fit);
+        window.addEventListener('resize', fit);
         try { await video.play(); } catch (e) {}
+        fit();
+        // Vẽ hình camera lên canvas (soi gương, vừa khung) ~ mỗi khung hình
+        const cv = $('canvas.cv', el), cx = cv.getContext('2d');
+        const draw = () => {
+          if (done) return;
+          const vw = video.videoWidth, vh = video.videoHeight;
+          if (vw && vh && cv.clientWidth) {
+            const dpr = Math.min(window.devicePixelRatio || 1, 2);
+            const W = Math.round(cv.clientWidth * dpr), H = Math.round(cv.clientHeight * dpr);
+            if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
+            const k = Math.max(W / vw, H / vh), dw = vw * k, dh = vh * k;
+            cx.setTransform(-1, 0, 0, 1, W, 0);
+            try { cx.drawImage(video, (W - dw) / 2, (H - dh) / 2, dw, dh); } catch (e) {}
+          }
+          requestAnimationFrame(draw);
+        };
+        draw();
         say('Đang tải bộ nhận diện… (lần đầu hơi lâu)');
         await modelP;
         if (done) return;
@@ -968,6 +1000,20 @@ function faceScan(opts) {
       } catch (e) { finish(e); }
     })();
   });
+}
+
+/** Khung camera theo đúng tỉ lệ hình camera trả về → không cắt, không phóng to (Zalo, Facebook…) */
+function fitCamFrame(el, video) {
+  if (!document.body.contains(el)) return;
+  const wrap = $('.vwrap', el), oval = $('.oval', el);
+  const vw = video.videoWidth, vh = video.videoHeight;
+  if (!wrap || !vw || !vh) return;
+  let w = Math.min(window.innerWidth * 0.78, 300), h = w * vh / vw;
+  const maxH = window.innerHeight * 0.46;
+  if (h > maxH) { w = w * maxH / h; h = maxH; }
+  wrap.style.width = Math.round(w) + 'px';
+  wrap.style.height = Math.round(h) + 'px';
+  wrap.style.borderRadius = oval.style.borderRadius = vw > vh ? '24px' : '50%';
 }
 
 function snap(video) {
